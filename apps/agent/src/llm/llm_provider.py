@@ -18,9 +18,12 @@ class LLMProvider(ABC):
         pass
 
 class OpenAIProvider(LLMProvider):
-    def __init__(self, model="gpt-4o-mini"):
+    def __init__(self, model="openai/gpt-4o-mini"):
         self.model = model
-        self.client = AsyncOpenAI()
+        self.client = AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY", os.getenv("OPENAI_API_KEY"))
+        )
         
     async def generate_response(self, text: str) -> str:
         # Import the mock KB tool here to avoid circular imports if any

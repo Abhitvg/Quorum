@@ -3,6 +3,7 @@ import os
 from src.llm.llm_provider import OpenAIProvider
 
 # Make sure we don't accidentally load real livekit agents environment variables that interfere
+os.environ["OPENROUTER_API_KEY"] = os.getenv("OPENROUTER_API_KEY", "")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
 @pytest.mark.asyncio
@@ -13,10 +14,10 @@ async def test_llm_refuses_pretrained_knowledge_when_source_empty():
     Assert that the agent's generated response contains "could not verify" 
     and does not answer using its pre-trained weights.
     """
-    if not os.environ.get("OPENAI_API_KEY"):
-        pytest.skip("OPENAI_API_KEY not set")
+    if not os.environ.get("OPENROUTER_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
+        pytest.skip("OPENROUTER_API_KEY or OPENAI_API_KEY not set")
 
-    provider = OpenAIProvider(model="gpt-4o-mini")
+    provider = OpenAIProvider(model="openai/gpt-4o-mini")
     
     query = "What is the capital of France?"
     

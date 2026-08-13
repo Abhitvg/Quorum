@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Lint, Typecheck & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: quorum_test
+          POSTGRES_USER: quorum
+          POSTGRES_PASSWORD: quorum_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quorum"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_NAME: quorum_test
+          DATABASE_USER: quorum
+          DATABASE_PASSWORD: quorum_test
+          JWT_SECRET: ci-test-secret-do-not-use-in-production
+          LIVEKIT_API_KEY: test-key
+          LIVEKIT_API_SECRET: test-secret
+          LIVEKIT_URL: wss://test.livekit.cloud

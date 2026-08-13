@@ -24,7 +24,7 @@ export class TranscriptsService {
   async getTranscripts(meetingId: string): Promise<Transcript[]> {
     return this.transcriptRepo.find({
       where: { meetingId, isFinal: true },
-      order: { createdAt: 'ASC' },
+      order: { timestamp: 'ASC' },
     });
   }
 }

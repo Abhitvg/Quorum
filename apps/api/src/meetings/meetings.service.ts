@@ -228,4 +228,19 @@ export class MeetingsService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  async updateRecordingEgress(egressId: string, status: string, durationMs?: number) {
+    const recording = await this.recordingRepo.findOne({ where: { egressId } });
+    if (!recording) {
+      console.warn(`Recording not found for egressId: ${egressId}`);
+      return;
+    }
+    
+    recording.status = status;
+    if (durationMs) {
+      recording.durationMs = durationMs;
+    }
+    await this.recordingRepo.save(recording);
+    return recording;
+  }
 }

@@ -4,7 +4,7 @@ import asyncio
 import logging
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli
 from livekit.plugins.deepgram import STT
-from livekit.plugins.openai import TTS
+from livekit.plugins.elevenlabs import TTS
 from livekit import rtc
 from llm.llm_provider import OpenAIProvider
 

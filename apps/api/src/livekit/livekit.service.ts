@@ -116,12 +116,15 @@ export class LivekitService {
     const fileOutput = new EncodedFileOutput({
       filepath: filename,
       fileType: EncodedFileType.MP4,
-      s3: new S3Upload({
-        accessKey: s3AccessKey,
-        secret: s3SecretKey,
-        region: s3Region,
-        bucket: s3Bucket,
-      }),
+      output: {
+        case: 's3',
+        value: new S3Upload({
+          accessKey: s3AccessKey,
+          secret: s3SecretKey,
+          region: s3Region,
+          bucket: s3Bucket,
+        }),
+      },
     });
     return this.egressClient.startRoomCompositeEgress(roomName, {
       file: fileOutput,

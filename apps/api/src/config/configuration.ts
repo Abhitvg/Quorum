@@ -9,6 +9,8 @@ export default () => ({
     name: process.env.DATABASE_NAME || 'quorum',
     user: process.env.DATABASE_USER || 'quorum',
     password: process.env.DATABASE_PASSWORD || 'quorum_dev',
+    iamAuth: process.env.DATABASE_IAM_AUTH === 'true',
+    region: process.env.AWS_REGION || 'eu-north-1',
   },
 
   redis: {

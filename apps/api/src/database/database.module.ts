@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import { Signer } from '@aws-sdk/rds-signer';
 
 @Module({
   imports: [
@@ -17,19 +18,36 @@ import { ConfigService } from '@nestjs/config';
           };
         }
         const dbUrl = config.get<string>('database.url');
+        const iamAuth = config.get<boolean>('database.iamAuth');
+        const dbHost = config.get<string>('database.host') as string;
+        const dbPort = config.get<number>('database.port');
+        const dbUser = config.get<string>('database.user') as string;
+        const dbRegion = config.get<string>('database.region');
+
         return {
           type: 'postgres' as const,
-          ...(dbUrl
+          ...(dbUrl && !iamAuth
             ? {
                 url: dbUrl,
                 ssl: { rejectUnauthorized: false }, // Common for managed DBs like Render/Supabase
               }
             : {
-                host: config.get<string>('database.host') as string,
-                port: config.get<number>('database.port'),
+                host: dbHost,
+                port: dbPort,
                 database: config.get<string>('database.name') as string,
-                username: config.get<string>('database.user') as string,
-                password: config.get<string>('database.password') as string,
+                username: dbUser,
+                password: iamAuth
+                  ? async () => {
+                      const signer = new Signer({
+                        hostname: dbHost,
+                        port: dbPort as number,
+                        username: dbUser,
+                        region: dbRegion,
+                      });
+                      return await signer.getAuthToken();
+                    }
+                  : (config.get<string>('database.password') as string),
+                ...(iamAuth ? { ssl: { rejectUnauthorized: false } } : {}),
               }),
           autoLoadEntities: true,
           synchronize: true, // DEV ONLY — use migrations in production

@@ -24,6 +24,13 @@ import { Signer } from '@aws-sdk/rds-signer';
         const dbUser = config.get<string>('database.user') as string;
         const dbRegion = config.get<string>('database.region');
 
+        console.log('--- DATABASE CONNECTION DEBUG ---');
+        console.log('DATABASE_URL present:', !!dbUrl);
+        console.log('DATABASE_IAM_AUTH:', iamAuth);
+        console.log('DATABASE_HOST:', dbHost);
+        console.log('DATABASE_PORT:', dbPort);
+        console.log('---------------------------------');
+
         return {
           type: 'postgres' as const,
           ...(dbUrl && !iamAuth

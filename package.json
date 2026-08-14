@@ -4,6 +4,8 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "build:api": "turbo run build --filter=@quorum/api",
+    "start:api": "npm --prefix apps/api run start:prod",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",

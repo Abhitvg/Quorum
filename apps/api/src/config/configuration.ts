@@ -35,5 +35,12 @@ export default () => ({
     apiKey: process.env.LIVEKIT_API_KEY || '',
     apiSecret: process.env.LIVEKIT_API_SECRET || '',
     url: process.env.LIVEKIT_URL || '',
+    s3AccessKey: process.env.S3_ACCESS_KEY_ID || '',
+    s3SecretKey: process.env.S3_SECRET_ACCESS_KEY || '',
+    s3Region: process.env.S3_REGION || 'us-east-1',
+    s3Bucket: process.env.S3_BUCKET || '',
   },
+
+  internalApiKey: process.env.INTERNAL_API_KEY || '',
 });
+

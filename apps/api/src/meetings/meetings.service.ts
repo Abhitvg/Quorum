@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,6 +10,8 @@ import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class MeetingsService {
+  private readonly logger = new Logger(MeetingsService.name);
+
   constructor(
     @InjectRepository(Meeting)
     private readonly meetingRepo: Repository<Meeting>,
@@ -47,6 +49,17 @@ export class MeetingsService {
     });
     if (!meeting) {
       throw new NotFoundException('Meeting not found');
+    }
+    return meeting;
+  }
+
+  /**
+   * Get meeting by ID with org-scoping. Throws if not found or not in user's org.
+   */
+  async findByIdForUser(id: string, user: User): Promise<Meeting> {
+    const meeting = await this.findById(id);
+    if (meeting.orgId !== user.orgId) {
+      throw new ForbiddenException('You do not have access to this meeting');
     }
     return meeting;
   }
@@ -93,16 +106,21 @@ export class MeetingsService {
 
       // Dispatch the Quo agent to join the room
       this.summonAgent(meeting.id).catch(e => {
-        console.error('Failed to dispatch agent automatically:', e);
+        this.logger.error('Failed to dispatch agent automatically:', e);
       });
     }
 
-    // Record participant join
-    const participant = this.participantRepo.create({
-      meetingId: meeting.id,
-      userId: user.id,
+    // Record participant join (upsert to prevent duplicates)
+    const existing = await this.participantRepo.findOne({
+      where: { meetingId: meeting.id, userId: user.id },
     });
-    await this.participantRepo.save(participant);
+    if (!existing) {
+      const participant = this.participantRepo.create({
+        meetingId: meeting.id,
+        userId: user.id,
+      });
+      await this.participantRepo.save(participant);
+    }
 
     // Generate LiveKit token
     const token = await this.livekitService.generateToken(
@@ -212,7 +230,7 @@ export class MeetingsService {
       await this.recordingRepo.save(recording);
       return recording;
     } catch (e) {
-      console.error('Failed to start egress', e);
+      this.logger.error('Failed to start egress', e);
       throw e;
     }
   }
@@ -242,7 +260,7 @@ export class MeetingsService {
   async updateRecordingEgress(egressId: string, status: string, durationMs?: number) {
     const recording = await this.recordingRepo.findOne({ where: { egressId } });
     if (!recording) {
-      console.warn(`Recording not found for egressId: ${egressId}`);
+      this.logger.warn(`Recording not found for egressId: ${egressId}`);
       return;
     }
     

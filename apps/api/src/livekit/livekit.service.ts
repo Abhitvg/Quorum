@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AccessToken, RoomServiceClient, EgressClient, EncodedFileOutput, EncodedFileType, S3Upload, AgentDispatchClient } from 'livekit-server-sdk';
 
 @Injectable()
 export class LivekitService {
+  private readonly logger = new Logger(LivekitService.name);
   private readonly apiKey: string;
   private readonly apiSecret: string;
   private readonly url: string;
@@ -29,7 +30,7 @@ export class LivekitService {
       return { success: true };
     } catch (e) {
       console.error('Failed to dispatch agent:', e);
-      return { success: false, error: e.message };
+      return { success: false, error: (e as Error).message };
     }
   }
 

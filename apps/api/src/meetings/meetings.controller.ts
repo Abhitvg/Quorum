@@ -51,18 +51,21 @@ export class MeetingsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const meeting = await this.meetingsService.findById(id);
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: Request & { user: User },
+  ) {
+    const meeting = await this.meetingsService.findByIdForUser(id, req.user);
     return { meeting };
   }
 
   @Post(':id/summon-agent')
-  async summonAgent(@Param('id') id: string) {
-    const meeting = await this.meetingsService.findById(id);
-    const agentName = process.env.AGENT_IDENTITY || 'quo-agent';
-    // Access the livekitService via meetingsService or directly if we inject it
-    // Wait, meetingsService already has livekitService. We can add a method to meetingsService.
-    await this.meetingsService.summonAgent(meeting.id);
+  async summonAgent(
+    @Param('id') id: string,
+    @Req() req: Request & { user: User },
+  ) {
+    await this.meetingsService.findByIdForUser(id, req.user);
+    await this.meetingsService.summonAgent(id);
     return { success: true };
   }
 
@@ -92,7 +95,11 @@ export class MeetingsController {
    * List participants currently in the LiveKit room.
    */
   @Get(':id/participants')
-  async getParticipants(@Param('id') id: string) {
+  async getParticipants(
+    @Param('id') id: string,
+    @Req() req: Request & { user: User },
+  ) {
+    await this.meetingsService.findByIdForUser(id, req.user);
     const participants = await this.meetingsService.getParticipants(id);
     return { participants };
   }

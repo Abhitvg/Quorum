@@ -12,6 +12,12 @@ export class InfrastructureStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // Parameterized values — override via cdk.json context or --context flags
+    const dbHost = this.node.tryGetContext('databaseHost') || 'database-1.cluster-cvs68yyk49gx.eu-north-1.rds.amazonaws.com';
+    const livekitUrl = this.node.tryGetContext('livekitUrl') || 'wss://quorum-oor689rg.livekit.cloud';
+    const domainName = this.node.tryGetContext('domainName') || 'quorum.atma-ai.co.in';
+    const apiDomainName = this.node.tryGetContext('apiDomainName') || `api.${domainName}`;
+
     // 1. Create a new VPC with Public and Private subnets
     const vpc = new ec2.Vpc(this, 'QuorumVpc', {
       maxAzs: 2,
@@ -73,7 +79,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Create a certificate for the API Load Balancer
     const certificate = new acm.Certificate(this, 'ApiCertificate', {
-      domainName: 'api.quorum.atma-ai.co.in',
+      domainName: apiDomainName,
       validation: acm.CertificateValidation.fromDns(),
     });
 
@@ -92,14 +98,14 @@ export class InfrastructureStack extends cdk.Stack {
         containerPort: 3001,
         environment: {
           DATABASE_IAM_AUTH: 'true',
-          DATABASE_HOST: 'database-1.cluster-cvs68yyk49gx.eu-north-1.rds.amazonaws.com',
+          DATABASE_HOST: dbHost,
           DATABASE_PORT: '5432',
           DATABASE_USER: 'postgres',
           DATABASE_NAME: 'postgres',
-          AWS_REGION: 'eu-north-1',
+          AWS_REGION: this.region,
           REDIS_HOST: redisCluster.attrRedisEndpointAddress,
           REDIS_PORT: redisCluster.attrRedisEndpointPort,
-          LIVEKIT_URL: 'wss://quorum-oor689rg.livekit.cloud',
+          LIVEKIT_URL: livekitUrl,
         },
         secrets: {
           JWT_SECRET: ecs.Secret.fromSecretsManager(secret, 'JWT_SECRET'),
@@ -137,7 +143,7 @@ export class InfrastructureStack extends cdk.Stack {
       }),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'Agent' }),
       environment: {
-        LIVEKIT_URL: 'wss://quorum-oor689rg.livekit.cloud',
+        LIVEKIT_URL: livekitUrl,
         REDIS_HOST: redisCluster.attrRedisEndpointAddress,
         REDIS_PORT: redisCluster.attrRedisEndpointPort,
       },
@@ -169,12 +175,12 @@ export class InfrastructureStack extends cdk.Stack {
       //   oauthToken: cdk.SecretValue.secretsManager('github-token'),
       // }),
       environmentVariables: {
-        NEXT_PUBLIC_API_URL: 'https://api.quorum.atma-ai.co.in',
-        NEXT_PUBLIC_LIVEKIT_URL: 'wss://quorum-oor689rg.livekit.cloud',
+        NEXT_PUBLIC_API_URL: `https://${apiDomainName}`,
+        NEXT_PUBLIC_LIVEKIT_URL: livekitUrl,
       },
     });
 
-    const domain = amplifyApp.addDomain('quorum.atma-ai.co.in', {
+    const domain = amplifyApp.addDomain(domainName, {
       enableAutoSubdomain: true,
       autoSubdomainCreationPatterns: ['*', 'pr*'],
     });

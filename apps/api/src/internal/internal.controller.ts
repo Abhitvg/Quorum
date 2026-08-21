@@ -1,17 +1,40 @@
 import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
+import { IsString, IsBoolean, IsNumber, IsNotEmpty, IsOptional } from 'class-validator';
 import { InternalAuthGuard } from './guards/internal-auth.guard';
 import { TranscriptsService } from '../transcripts/transcripts.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { LivekitService } from '../livekit/livekit.service';
 
 class CreateTranscriptDto {
+  @IsString()
+  @IsNotEmpty()
   roomName: string;
+
+  @IsString()
+  @IsNotEmpty()
   speakerIdentity: string;
+
+  @IsString()
+  @IsOptional()
   speakerName: string;
+
+  @IsString()
+  @IsNotEmpty()
   text: string;
+
+  @IsBoolean()
   isFinal: boolean;
+
+  @IsNumber()
+  @IsOptional()
   startMs?: number;
+
+  @IsNumber()
+  @IsOptional()
   endMs?: number;
+
+  @IsNumber()
+  @IsOptional()
   confidence?: number;
 }
 

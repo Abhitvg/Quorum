@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Logo from '@/components/Logo';
 import Button from '@/components/Button';
-import { api } from '@/lib/api';
+import { api, type MeetingItem } from '@/lib/api';
 
 export default function Dashboard() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
-  const [meetings, setMeetings] = useState<Record<string, unknown>[]>([]);
+  const [meetings, setMeetings] = useState<MeetingItem[]>([]);
   const [loadingMeetings, setLoadingMeetings] = useState(true);
   const [roomName, setRoomName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -125,18 +125,18 @@ export default function Dashboard() {
           {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: '100ms' }}>
             <div className="glass rounded-2xl p-5 hover-lift">
-              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Hours Met</p>
-              <p className="text-3xl font-bold text-white">24<span className="text-lg text-text-secondary">.5</span></p>
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Total Meetings</p>
+              <p className="text-3xl font-bold text-white">{meetings.length}</p>
               <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-status-live">
                 <span className="w-4 h-4 rounded-full bg-status-live/20 flex items-center justify-center">↑</span>
-                12% this week
+                {activeMeetings.length} live now
               </div>
             </div>
             <div className="glass rounded-2xl p-5 hover-lift">
-              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">AI Interactions</p>
-              <p className="text-3xl font-bold text-white">142</p>
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Completed</p>
+              <p className="text-3xl font-bold text-white">{pastMeetings.length}</p>
               <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-                Questions answered
+                Meetings held
               </div>
             </div>
           </div>
@@ -209,9 +209,11 @@ export default function Dashboard() {
                           🕒 {new Date(meeting.createdAt || '').toLocaleDateString()}
                         </span>
                         <span className="w-1 h-1 rounded-full bg-white/20" />
-                        <span>45 mins</span>
-                        <span className="w-1 h-1 rounded-full bg-white/20" />
-                        <span className="flex items-center gap-1">👥 4 participants</span>
+                        <span>
+                          {meeting.endedAt && meeting.createdAt
+                            ? `${Math.round((new Date(meeting.endedAt).getTime() - new Date(meeting.createdAt).getTime()) / 60000)} mins`
+                            : 'Duration N/A'}
+                        </span>
                       </div>
                     </div>
                     

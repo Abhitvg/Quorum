@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Signer } from '@aws-sdk/rds-signer';
+
+const logger = new Logger('DatabaseModule');
 
 @Module({
   imports: [
@@ -24,12 +26,7 @@ import { Signer } from '@aws-sdk/rds-signer';
         const dbUser = config.get<string>('database.user') as string;
         const dbRegion = config.get<string>('database.region');
 
-        console.log('--- DATABASE CONNECTION DEBUG ---');
-        console.log('DATABASE_URL present:', !!dbUrl);
-        console.log('DATABASE_IAM_AUTH:', iamAuth);
-        console.log('DATABASE_HOST:', dbHost);
-        console.log('DATABASE_PORT:', dbPort);
-        console.log('---------------------------------');
+        logger.log(`Connecting to ${iamAuth ? 'IAM-auth' : 'password-auth'} database at ${dbHost}:${dbPort}`);
 
         return {
           type: 'postgres' as const,
@@ -57,7 +54,7 @@ import { Signer } from '@aws-sdk/rds-signer';
                 ...(iamAuth ? { ssl: { rejectUnauthorized: false } } : {}),
               }),
           autoLoadEntities: true,
-          synchronize: true, // DEV ONLY — use migrations in production
+          synchronize: process.env.NODE_ENV !== 'production',
           logging: process.env.NODE_ENV === 'development',
         };
       },

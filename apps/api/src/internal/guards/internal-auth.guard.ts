@@ -1,8 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class InternalAuthGuard implements CanActivate {
+  private readonly logger = new Logger(InternalAuthGuard.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -14,10 +16,10 @@ export class InternalAuthGuard implements CanActivate {
     }
 
     const token = authHeader.split(' ')[1];
-    const expectedKey = this.configService.get<string>('INTERNAL_API_KEY');
+    const expectedKey = this.configService.get<string>('internalApiKey');
 
     if (!expectedKey) {
-      console.error('INTERNAL_API_KEY is not configured on the server');
+      this.logger.error('INTERNAL_API_KEY is not configured on the server');
       throw new UnauthorizedException('Internal token mismatch');
     }
 
@@ -28,3 +30,4 @@ export class InternalAuthGuard implements CanActivate {
     return true;
   }
 }
+

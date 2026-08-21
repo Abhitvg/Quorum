@@ -103,10 +103,13 @@ export class UsersService {
   }
 
   /**
-   * Update a user's profile information.
+   * Update a user's profile information (safe fields only).
    */
-  async updateUser(id: string, data: Partial<User>): Promise<User> {
-    await this.userRepo.update(id, data);
+  async updateUser(id: string, data: Pick<Partial<User>, 'name' | 'avatarUrl'>): Promise<User> {
+    const safeData: Partial<User> = {};
+    if (data.name !== undefined) safeData.name = data.name;
+    if (data.avatarUrl !== undefined) safeData.avatarUrl = data.avatarUrl;
+    await this.userRepo.update(id, safeData);
     return this.findById(id) as Promise<User>;
   }
 

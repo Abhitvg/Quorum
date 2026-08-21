@@ -1,6 +1,7 @@
 import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_PIPE } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -18,6 +19,10 @@ import configuration from './config/configuration';
       envFilePath: ['.env.local', '.env'],
       load: [configuration],
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,   // 1 minute window
+      limit: 60,    // 60 requests per minute
+    }]),
     DatabaseModule,
     AuthModule,
     UsersModule,
@@ -36,6 +41,11 @@ import configuration from './config/configuration';
         transform: true,
       }),
     },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}
+

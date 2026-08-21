@@ -25,4 +25,12 @@ export class OrgsService {
   async findById(id: string): Promise<Org | null> {
     return this.orgRepo.findOneBy({ id });
   }
+
+  /**
+   * Update an organization's details.
+   */
+  async updateOrg(id: string, data: Partial<Org>): Promise<Org> {
+    await this.orgRepo.update(id, data);
+    return this.findById(id) as Promise<Org>;
+  }
 }

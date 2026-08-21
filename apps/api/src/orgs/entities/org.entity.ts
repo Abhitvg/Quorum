@@ -19,7 +19,7 @@ export class Org {
   @Column({ length: 50, default: 'personal' })
   plan: string;
 
-  @Column({ name: 'data_residency_region', length: 50, nullable: true })
+  @Column({ name: 'data_residency_region', type: 'varchar', length: 50, nullable: true })
   dataResidencyRegion: string | null;
 
   @CreateDateColumn({ name: 'created_at' })

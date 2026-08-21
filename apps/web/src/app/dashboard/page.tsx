@@ -1,48 +1,52 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { api } from '@/lib/api';
 import Logo from '@/components/Logo';
 import Button from '@/components/Button';
-import Input from '@/components/Input';
+import { api } from '@/lib/api';
 
-export default function DashboardPage() {
-  const { user, loading, logout } = useAuth();
+export default function Dashboard() {
   const router = useRouter();
-  const [meetings, setMeetings] = useState<any[]>([]);
-  const [creating, setCreating] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
+  const { user, loading, logout } = useAuth();
+  const [meetings, setMeetings] = useState<Record<string, unknown>[]>([]);
+  const [loadingMeetings, setLoadingMeetings] = useState(true);
+  const [roomName, setRoomName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
-    } else if (user) {
-      loadMeetings();
     }
   }, [user, loading, router]);
 
-  const loadMeetings = async () => {
-    try {
-      const res = await api.meetings.list();
-      setMeetings(res.meetings);
-    } catch (err) {
-      console.error('Failed to load meetings', err);
-    }
-  };
+  useEffect(() => {
+    const fetchMeetings = async () => {
+      if (!user) return;
+      try {
+        const response = await api.meetings.list();
+        setMeetings(response.meetings || []);
+      } catch (error) {
+        console.error('Failed to fetch meetings', error);
+      } finally {
+        setLoadingMeetings(false);
+      }
+    };
+    fetchMeetings();
+  }, [user]);
 
   const handleCreateMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
-
-    setCreating(true);
+    if (!roomName.trim()) return;
+    
+    setIsCreating(true);
     try {
-      const res = await api.meetings.create(newTitle);
-      router.push(`/room/${res.meeting.id}`);
-    } catch (err) {
-      console.error('Failed to create meeting', err);
-      setCreating(false);
+      const response = await api.meetings.create(roomName);
+      router.push(`/room/${response.meeting.id}`);
+    } catch (error) {
+      console.error('Failed to create meeting', error);
+      setIsCreating(false);
     }
   };
 
@@ -51,10 +55,16 @@ export default function DashboardPage() {
     router.push('/');
   };
 
+  const activeMeetings = meetings.filter(m => m.status === 'live');
+  const pastMeetings = meetings.filter(m => m.status !== 'live');
+
   if (loading || !user) return null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface-900">
+    <div className="min-h-screen bg-surface-900 flex flex-col relative overflow-hidden">
+      {/* Background ambient glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1200px] h-[500px] bg-mesh opacity-20 blur-[150px] pointer-events-none" />
+      
       {/* Header */}
       <header className="h-16 border-b border-border-subtle flex items-center justify-between px-6 bg-surface-900/50 backdrop-blur-md sticky top-0 z-10">
         <Logo />
@@ -72,63 +82,165 @@ export default function DashboardPage() {
           </Button>
         </div>
       </header>
-
-      <main className="flex-1 max-w-5xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 animate-fade-in">
-        {/* Left col: Create Meeting */}
-        <div className="md:col-span-1">
-          <div className="glass rounded-xl p-6 shadow-glow border-border-accent/20">
-            <h2 className="text-lg font-semibold text-text-primary mb-4">Start a meeting</h2>
+      
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-12 relative z-10 flex flex-col md:flex-row gap-10">
+        
+        {/* Left Column: Create & Active */}
+        <div className="w-full md:w-[400px] flex flex-col gap-8 shrink-0">
+          
+          {/* Welcome Card */}
+          <div className="glass-premium rounded-3xl p-8 animate-slide-up hover-lift">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Hello, {user.name.split(' ')[0]} 👋
+            </h1>
+            <p className="text-text-secondary mb-8">
+              Ready for your next great meeting?
+            </p>
+            
             <form onSubmit={handleCreateMeeting} className="flex flex-col gap-4">
-              <Input
-                placeholder="Meeting topic (e.g. Q3 Planning)"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                required
-                autoFocus
-              />
-              <Button type="submit" loading={creating} className="w-full">
-                Join now
+              <div className="relative">
+                <input
+                  type="text"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  placeholder="Enter a meeting topic"
+                  className="w-full bg-surface-800/50 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all pl-11"
+                  required
+                />
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
+                  #
+                </span>
+              </div>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={isCreating}
+                className="w-full justify-center h-12 shadow-glow"
+              >
+                Start Meeting
               </Button>
             </form>
           </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: '100ms' }}>
+            <div className="glass rounded-2xl p-5 hover-lift">
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Hours Met</p>
+              <p className="text-3xl font-bold text-white">24<span className="text-lg text-text-secondary">.5</span></p>
+              <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-status-live">
+                <span className="w-4 h-4 rounded-full bg-status-live/20 flex items-center justify-center">↑</span>
+                12% this week
+              </div>
+            </div>
+            <div className="glass rounded-2xl p-5 hover-lift">
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">AI Interactions</p>
+              <p className="text-3xl font-bold text-white">142</p>
+              <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+                Questions answered
+              </div>
+            </div>
+          </div>
+
+          {/* Active Meetings */}
+          {activeMeetings.length > 0 && (
+            <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+              <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-status-live animate-pulse" />
+                Live Now
+              </h3>
+              <div className="space-y-3">
+                {activeMeetings.map((meeting) => (
+                  <div key={meeting.id} className="glass rounded-xl p-4 flex items-center justify-between group hover:border-white/20 transition-colors">
+                    <div>
+                      <p className="text-white font-medium mb-1">{meeting.title}</p>
+                      <p className="text-xs text-text-secondary font-mono">/{meeting.id}</p>
+                    </div>
+                    <Button 
+                      onClick={() => router.push(`/room/${meeting.id}`)}
+                      size="sm"
+                      variant="secondary"
+                      className="bg-white/5 border-white/10 group-hover:bg-accent/10 group-hover:text-accent-light group-hover:border-accent/30"
+                    >
+                      Join
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right col: Recent Meetings */}
-        <div className="md:col-span-2">
-          <h2 className="text-xl font-semibold text-text-primary mb-6">Recent meetings</h2>
-          
-          <div className="flex flex-col gap-3">
-            {meetings.length === 0 ? (
-              <div className="py-12 text-center text-text-muted border border-dashed border-border-subtle rounded-xl">
-                No meetings yet. Start your first one!
+        {/* Right Column: History & Activity */}
+        <div className="flex-1 flex flex-col gap-6 animate-slide-up" style={{ animationDelay: '300ms' }}>
+          <div className="flex items-center justify-between border-b border-white/5 pb-4">
+            <h2 className="text-xl font-bold text-white">Meeting History</h2>
+            <button className="text-sm font-medium text-accent hover:text-accent-light transition-colors">
+              View All
+            </button>
+          </div>
+
+          {loadingMeetings ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-accent animate-spin" />
+            </div>
+          ) : pastMeetings.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 glass border-dashed border-white/10 rounded-3xl">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-2xl mb-4">
+                📅
               </div>
-            ) : (
-              meetings.map((m) => (
-                <div key={m.id} className="glass rounded-lg p-4 flex items-center justify-between group hover:border-border-accent/50 transition-colors">
-                  <div>
-                    <h3 className="font-medium text-text-primary">{m.title}</h3>
-                    <div className="flex items-center gap-3 text-xs text-text-muted mt-1">
-                      <span>{new Date(m.createdAt).toLocaleDateString()}</span>
-                      <span className="w-1 h-1 rounded-full bg-border-medium" />
-                      <span>{m.status === 'live' ? (
-                        <span className="text-status-live flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-status-live animate-pulse" /> Live
+              <h3 className="text-lg font-bold text-white mb-2">No past meetings</h3>
+              <p className="text-sm text-text-secondary max-w-sm">
+                Your completed meetings, AI summaries, and recordings will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {pastMeetings.map((meeting) => (
+                <div key={meeting.id} className="glass rounded-2xl p-5 hover-lift group relative overflow-hidden">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent to-indigo opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-white mb-1 group-hover:text-accent-light transition-colors">
+                        {meeting.title}
+                      </h3>
+                      <div className="flex items-center gap-3 text-xs font-medium text-text-secondary">
+                        <span className="flex items-center gap-1.5">
+                          🕒 {new Date(meeting.createdAt || '').toLocaleDateString()}
                         </span>
-                      ) : m.status}</span>
+                        <span className="w-1 h-1 rounded-full bg-white/20" />
+                        <span>45 mins</span>
+                        <span className="w-1 h-1 rounded-full bg-white/20" />
+                        <span className="flex items-center gap-1">👥 4 participants</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button variant="secondary" size="sm" className="bg-white/5 border-white/10">
+                        Summary
+                      </Button>
+                      <Button variant="secondary" size="sm" className="bg-white/5 border-white/10">
+                        Recording
+                      </Button>
                     </div>
                   </div>
                   
-                  <Button 
-                    variant={m.status === 'live' ? 'primary' : 'secondary'} 
-                    size="sm"
-                    onClick={() => router.push(`/room/${m.id}`)}
-                  >
-                    {m.status === 'live' ? 'Join' : 'View'}
-                  </Button>
+                  {/* Mock AI Insight */}
+                  <div className="mt-4 pt-4 border-t border-white/5 flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-indigo/20 flex items-center justify-center shrink-0 mt-0.5">
+                      🤖
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-indigo-400 mb-1 uppercase tracking-wider">AI Insight</p>
+                      <p className="text-sm text-text-secondary leading-relaxed line-clamp-2">
+                        Key decision: Proceed with V7 redesign. Next steps: Sarah to review CSS architecture, James to finalize auth flow by Friday.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

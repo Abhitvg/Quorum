@@ -50,6 +50,32 @@ export interface UserResponse {
   };
 }
 
+// --- Meetings ---
+
+export interface MeetingItem {
+  id: string;
+  title: string;
+  hostId: string;
+  status: string;
+  roomName?: string;
+  createdAt: string;
+  updatedAt?: string;
+  endedAt?: string | null;
+}
+
+export interface ParticipantItem {
+  identity: string;
+  name?: string;
+  joinedAt?: number;
+  metadata?: string;
+}
+
+export interface TrackItem {
+  sid: string;
+  name?: string;
+  muted?: boolean;
+}
+
 export const api = {
   auth: {
     register: (email: string, password: string, name: string) =>
@@ -72,32 +98,37 @@ export const api = {
 
   meetings: {
     create: (title: string) =>
-      apiFetch<{ meeting: any }>('/meetings', {
+      apiFetch<{ meeting: MeetingItem }>('/meetings', {
         method: 'POST',
         body: JSON.stringify({ title }),
       }),
 
-    list: () => apiFetch<{ meetings: any[] }>('/meetings'),
+    list: () => apiFetch<{ meetings: MeetingItem[] }>('/meetings'),
 
-    get: (id: string) => apiFetch<{ meeting: any }>(`/meetings/${id}`),
+    get: (id: string) => apiFetch<{ meeting: MeetingItem }>(`/meetings/${id}`),
 
     getToken: (id: string) =>
       apiFetch<{ token: string; url: string }>(`/meetings/${id}/token`, {
         method: 'POST',
       }),
 
+    summonAgent: (id: string) =>
+      apiFetch<{ success: boolean }>(`/meetings/${id}/summon-agent`, {
+        method: 'POST',
+      }),
+
     end: (id: string) =>
-      apiFetch<{ meeting: any }>(`/meetings/${id}/end`, {
+      apiFetch<{ meeting: MeetingItem }>(`/meetings/${id}/end`, {
         method: 'POST',
       }),
 
     // Phase 3 — Host Controls
 
     getParticipants: (id: string) =>
-      apiFetch<{ participants: any[] }>(`/meetings/${id}/participants`),
+      apiFetch<{ participants: ParticipantItem[] }>(`/meetings/${id}/participants`),
 
     muteParticipant: (id: string, identity: string, trackSid: string, muted: boolean) =>
-      apiFetch<{ track: any }>(`/meetings/${id}/participants/${identity}/mute`, {
+      apiFetch<{ track: TrackItem }>(`/meetings/${id}/participants/${identity}/mute`, {
         method: 'POST',
         body: JSON.stringify({ trackSid, muted }),
       }),

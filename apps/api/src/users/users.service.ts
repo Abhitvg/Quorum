@@ -101,4 +101,22 @@ export class UsersService {
     const isValid = await bcrypt.compare(password, user.passwordHash);
     return isValid ? user : null;
   }
+
+  /**
+   * Update a user's profile information.
+   */
+  async updateUser(id: string, data: Partial<User>): Promise<User> {
+    await this.userRepo.update(id, data);
+    return this.findById(id) as Promise<User>;
+  }
+
+  /**
+   * Find all users belonging to a specific organization.
+   */
+  async findUsersByOrg(orgId: string): Promise<User[]> {
+    return this.userRepo.find({
+      where: { orgId },
+      order: { name: 'ASC' },
+    });
+  }
 }

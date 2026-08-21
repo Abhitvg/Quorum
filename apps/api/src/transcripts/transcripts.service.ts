@@ -13,9 +13,12 @@ export class TranscriptsService {
   async saveTranscript(data: {
     meetingId: string;
     speakerIdentity: string;
-    speakerName: string;
+    speakerName?: string;
     text: string;
     isFinal: boolean;
+    startMs: number;
+    endMs: number;
+    confidence: number;
   }): Promise<Transcript> {
     const transcript = this.transcriptRepo.create(data);
     return this.transcriptRepo.save(transcript);

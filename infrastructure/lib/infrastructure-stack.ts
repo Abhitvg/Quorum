@@ -7,7 +7,7 @@ import * as elasticache from 'aws-cdk-lib/aws-elasticache';
 import * as amplify from '@aws-cdk/aws-amplify-alpha';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 export class InfrastructureStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -71,9 +71,17 @@ export class InfrastructureStack extends cdk.Stack {
       },
     });
 
+    // Create a certificate for the API Load Balancer
+    const certificate = new acm.Certificate(this, 'ApiCertificate', {
+      domainName: 'api.quorum.atma-ai.co.in',
+      validation: acm.CertificateValidation.fromDns(),
+    });
+
     // 4. API Service (Load Balanced Fargate Service)
     const apiService = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'QuorumApiService', {
       cluster,
+      certificate,
+      redirectHTTP: true,
       memoryLimitMiB: 1024,
       cpu: 512,
       taskImageOptions: {
@@ -161,10 +169,16 @@ export class InfrastructureStack extends cdk.Stack {
       //   oauthToken: cdk.SecretValue.secretsManager('github-token'),
       // }),
       environmentVariables: {
-        NEXT_PUBLIC_API_URL: apiService.loadBalancer.loadBalancerDnsName,
+        NEXT_PUBLIC_API_URL: 'https://api.quorum.atma-ai.co.in',
         NEXT_PUBLIC_LIVEKIT_URL: 'wss://quorum-oor689rg.livekit.cloud',
       },
     });
+
+    const domain = amplifyApp.addDomain('quorum.atma-ai.co.in', {
+      enableAutoSubdomain: true,
+      autoSubdomainCreationPatterns: ['*', 'pr*'],
+    });
+    domain.mapRoot(amplifyApp.addBranch('main'));
 
     // Outputs
     new cdk.CfnOutput(this, 'ApiUrl', {

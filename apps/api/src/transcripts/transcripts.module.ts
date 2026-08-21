@@ -4,6 +4,7 @@ import { TranscriptsService } from './transcripts.service';
 import { Transcript } from './entities/transcript.entity';
 import { MeetingsModule } from '../meetings/meetings.module';
 import { LivekitModule } from '../livekit/livekit.module';
+import { TranscriptsController } from './transcripts.controller';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { LivekitModule } from '../livekit/livekit.module';
     MeetingsModule,
     LivekitModule,
   ],
+  controllers: [TranscriptsController],
   providers: [TranscriptsService],
   exports: [TranscriptsService]
 })

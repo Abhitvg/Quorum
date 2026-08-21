@@ -56,6 +56,16 @@ export class MeetingsController {
     return { meeting };
   }
 
+  @Post(':id/summon-agent')
+  async summonAgent(@Param('id') id: string) {
+    const meeting = await this.meetingsService.findById(id);
+    const agentName = process.env.AGENT_IDENTITY || 'quo-agent';
+    // Access the livekitService via meetingsService or directly if we inject it
+    // Wait, meetingsService already has livekitService. We can add a method to meetingsService.
+    await this.meetingsService.summonAgent(meeting.id);
+    return { success: true };
+  }
+
   @Post(':id/token')
   async getToken(
     @Param('id') id: string,

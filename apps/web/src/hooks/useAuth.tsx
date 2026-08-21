@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { api, ApiError, type UserResponse } from '@/lib/api';
+import { api } from '@/lib/api';
 
 interface AuthUser {
   id: string;

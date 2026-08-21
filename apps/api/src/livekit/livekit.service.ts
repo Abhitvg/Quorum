@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AccessToken, RoomServiceClient, EgressClient, EncodedFileOutput, EncodedFileType, S3Upload } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient, EgressClient, EncodedFileOutput, EncodedFileType, S3Upload, AgentDispatchClient } from 'livekit-server-sdk';
 
 @Injectable()
 export class LivekitService {
@@ -9,6 +9,7 @@ export class LivekitService {
   private readonly url: string;
   private readonly roomService: RoomServiceClient;
   private readonly egressClient: EgressClient;
+  private readonly agentDispatchClient: AgentDispatchClient;
 
   constructor(private readonly config: ConfigService) {
     this.apiKey = this.config.get<string>('livekit.apiKey', '');
@@ -19,6 +20,17 @@ export class LivekitService {
     const httpUrl = this.url.replace('wss://', 'https://').replace('ws://', 'http://');
     this.roomService = new RoomServiceClient(httpUrl, this.apiKey, this.apiSecret);
     this.egressClient = new EgressClient(httpUrl, this.apiKey, this.apiSecret);
+    this.agentDispatchClient = new AgentDispatchClient(httpUrl, this.apiKey, this.apiSecret);
+  }
+
+  async dispatchAgent(roomName: string, agentName: string) {
+    try {
+      await this.agentDispatchClient.createDispatch(roomName, agentName);
+      return { success: true };
+    } catch (e) {
+      console.error('Failed to dispatch agent:', e);
+      return { success: false, error: e.message };
+    }
   }
 
   /**

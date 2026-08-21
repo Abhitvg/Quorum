@@ -86,11 +86,15 @@ export class MeetingsService {
   ): Promise<{ token: string; url: string }> {
     const meeting = await this.findById(meetingId);
 
-    // Update meeting status to live if it was scheduled
     if (meeting.status === 'scheduled') {
       meeting.status = 'live';
       meeting.startedAt = new Date();
       await this.meetingRepo.save(meeting);
+
+      // Dispatch the Quo agent to join the room
+      this.summonAgent(meeting.id).catch(e => {
+        console.error('Failed to dispatch agent automatically:', e);
+      });
     }
 
     // Record participant join
@@ -125,6 +129,12 @@ export class MeetingsService {
     meeting.status = 'ended';
     meeting.endedAt = new Date();
     return this.meetingRepo.save(meeting);
+  }
+
+  async summonAgent(meetingId: string) {
+    const meeting = await this.findById(meetingId);
+    const agentName = process.env.AGENT_IDENTITY || 'quo-agent';
+    return this.livekitService.dispatchAgent(meeting.roomName, agentName);
   }
 
   // =============================================

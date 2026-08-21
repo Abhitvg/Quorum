@@ -10,6 +10,9 @@ class CreateTranscriptDto {
   speakerName: string;
   text: string;
   isFinal: boolean;
+  startMs?: number;
+  endMs?: number;
+  confidence?: number;
 }
 
 @Controller('internal')
@@ -40,6 +43,9 @@ export class InternalController {
         speakerName: dto.speakerName,
         text: dto.text,
         isFinal: dto.isFinal,
+        startMs: dto.startMs || 0,
+        endMs: dto.endMs || 0,
+        confidence: dto.confidence || 1.0,
       });
     }
 

@@ -19,6 +19,13 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"Connecting to room {ctx.room.name}")
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
     
+    # Initialize persistent audio track for the agent's voice
+    source = rtc.AudioSource(24000, 1)
+    track = rtc.LocalAudioTrack.create_audio_track("agent-mic", source)
+    options = rtc.TrackPublishOptions()
+    options.source = rtc.TrackSource.SOURCE_MICROPHONE
+    await ctx.room.local_participant.publish_track(track, options)
+    
     stt = STT(model="nova-3-general")
     stt_stream = stt.stream()
     
@@ -91,21 +98,9 @@ async def entrypoint(ctx: JobContext):
             # We use TTS.synthesize which returns an async iterable of audio frames
             audio_stream = tts.synthesize(text=response_text)
             
-            # Create a source and publish it if not already published
-            # livekit-agents usually abstracts this via VoicePipelineAgent, but since we are manually orchestrating:
-            source = rtc.AudioSource(24000, 1)
-            track = rtc.LocalAudioTrack.create_audio_track("agent-mic", source)
-            
-            options = rtc.TrackPublishOptions()
-            options.source = rtc.TrackSource.SOURCE_MICROPHONE
-            
-            publication = await ctx.room.local_participant.publish_track(track, options)
-            
-            # Push frames to the source
+            # Push frames to the persistent source
             async for frame_event in audio_stream:
                 await source.capture_frame(frame_event.frame)
-                
-            await ctx.room.local_participant.unpublish_track(publication.sid)
                 
         except Exception as e:
             logger.error(f"Error during agent turn: {e}")

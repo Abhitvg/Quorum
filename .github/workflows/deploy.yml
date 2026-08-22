@@ -1,0 +1,42 @@
+name: Deploy AWS Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  deploy-aws:
+    name: Deploy Backend & Agent to AWS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'infrastructure/package-lock.json'
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'eu-north-1' }}
+
+      - name: Install CDK Dependencies
+        run: npm ci
+        working-directory: infrastructure
+
+      - name: CDK Bootstrap
+        run: npx cdk bootstrap
+        working-directory: infrastructure
+
+      - name: CDK Deploy
+        run: npx cdk deploy --require-approval never
+        working-directory: infrastructure

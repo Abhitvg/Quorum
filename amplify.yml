@@ -6,10 +6,11 @@ applications:
         preBuild:
           commands:
             - npm install -g pnpm@9
-            - (cd ../.. && pnpm install)
+            - cd ../..
+            - pnpm install
         build:
           commands:
-            - (cd ../.. && pnpm run build --filter=web)
+            - pnpm run build --filter=web
       artifacts:
         baseDirectory: .next
         files:

@@ -50,44 +50,11 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
 
   useEffect(() => {
     if (!joined) {
-      // 1. Random Picsum background
-      const randomId = Math.floor(Math.random() * 1000);
-      setTimeout(() => setBgImageUrl(`https://picsum.photos/id/${randomId}/1920/1080`), 0);
-
-      // 2. Open Trivia DB
-      fetch('https://opentdb.com/api.php?amount=1')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.results && data.results[0]) {
-            // Decode HTML entities
-            const decode = (str: string) => {
-              const txt = document.createElement('textarea');
-              txt.innerHTML = str;
-              return txt.value;
-            };
-            setTrivia({
-              q: decode(data.results[0].question),
-              a: decode(data.results[0].correct_answer),
-            });
-          }
-        })
-        .catch(() => {});
-
-      // 3. Cat Facts
-      fetch('https://catfact.ninja/fact')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.fact) setCatFact(data.fact);
-        })
-        .catch(() => {});
-
-      // 4. Kanye Rest API for Join Tooltip
-      fetch('https://api.kanye.rest')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.quote) setKanyeQuote(`" ${data.quote} " - Kanye`);
-        })
-        .catch(() => {});
+      // 1. Static Mesh Background instead of random Picsum (to reduce 3rd party calls)
+      // bgImageUrl can just be omitted, relying on the static bg styling already in place.
+      
+      // Removed open trivia, catfact, and kanye APIs for privacy/CSP reduction
+      setKanyeQuote('Join meeting');
     }
   }, [joined]);
 

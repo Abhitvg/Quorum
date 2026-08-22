@@ -90,8 +90,8 @@ export default function FocusMode({ isOpen, onClose }: FocusModeProps) {
     }
 
     // Store globally for other components to check
-    (window as Record<string, unknown>).__quorumFocusMode = preset;
-    (window as Record<string, unknown>).__quorumFocusConfig = config;
+    (window as any).__quorumFocusMode = preset;
+    (window as any).__quorumFocusConfig = config;
 
     // Auto-mute if needed
     if (config.autoMute && room.localParticipant.isMicrophoneEnabled) {

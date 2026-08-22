@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRoomContext } from '@livekit/components-react';
-import { RoomEvent } from 'livekit-client';
+import { RoomEvent, RemoteParticipant } from 'livekit-client';
 
 interface NoteEntry {
   id: string;

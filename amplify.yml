@@ -5,18 +5,15 @@ applications:
       phases:
         preBuild:
           commands:
-            - npm install -g pnpm@9
-            - cd ../..
-            - rm -rf node_modules apps/*/node_modules packages/*/node_modules
-            - pnpm install
+            - npm install
         build:
           commands:
-            - pnpm run build --filter=web
+            - npm run build
       artifacts:
         baseDirectory: .next
         files:
           - '**/*'
       cache:
         paths:
+          - node_modules/**/*
           - .next/cache/**/*
-          - ../../node_modules/**/*

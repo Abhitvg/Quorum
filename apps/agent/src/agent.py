@@ -69,8 +69,9 @@ async def entrypoint(ctx: JobContext):
 
                     # 2. Branch: check for wake word
                     if is_final and not is_responding:
-                        # Simple wake word check
-                        if "quo" in text.lower().replace(",", "").replace(".", ""):
+                        import re
+                        # Use word boundaries so "quote" doesn't trigger "quo"
+                        if re.search(r'\bquo\b', text, re.IGNORECASE):
                             # Start processing
                             is_responding = True
                             asyncio.create_task(handle_agent_turn(text))

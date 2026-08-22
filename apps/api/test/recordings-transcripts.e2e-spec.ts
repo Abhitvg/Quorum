@@ -25,7 +25,11 @@ describe('Recordings and Transcripts (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    app.useGlobalPipes(new ValidationPipe({ 
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true 
+    }));
     await app.init();
 
     jwtService = app.get(JwtService);
@@ -52,15 +56,32 @@ describe('Recordings and Transcripts (e2e)', () => {
     expect(createRes.status).toBe(201);
     const meetingId = createRes.body.meeting.id;
 
-    // 3. user2 (org2) attempts to fetch recordings for user1's meeting (org1) -> 403 Forbidden
+    // 3. user2 (org2) attempts to access user1's meeting (org1) -> 403 Forbidden
     const getResOrg2 = await request(app.getHttpServer())
       .get(`/meetings/${meetingId}/recordings`)
       .set('Authorization', `Bearer ${getAuthToken(user2)}`)
       .send();
-
     expect(getResOrg2.status).toBe(403);
 
-    // 4. user3 (org1) attempts to fetch recordings for user1's meeting (org1) -> 200 OK
+    const tokenResOrg2 = await request(app.getHttpServer())
+      .post(`/meetings/${meetingId}/token`)
+      .set('Authorization', `Bearer ${getAuthToken(user2)}`)
+      .send();
+    expect(tokenResOrg2.status).toBe(403);
+
+    const partResOrg2 = await request(app.getHttpServer())
+      .get(`/meetings/${meetingId}/participants`)
+      .set('Authorization', `Bearer ${getAuthToken(user2)}`)
+      .send();
+    expect(partResOrg2.status).toBe(403);
+
+    const summonResOrg2 = await request(app.getHttpServer())
+      .post(`/meetings/${meetingId}/summon-agent`)
+      .set('Authorization', `Bearer ${getAuthToken(user2)}`)
+      .send();
+    expect(summonResOrg2.status).toBe(403);
+
+    // 4. user3 (org1) attempts to access user1's meeting (org1) -> 200/201 OK
     const getResOrg1 = await request(app.getHttpServer())
       .get(`/meetings/${meetingId}/recordings`)
       .set('Authorization', `Bearer ${getAuthToken(user3)}`)
@@ -68,5 +89,61 @@ describe('Recordings and Transcripts (e2e)', () => {
 
     expect(getResOrg1.status).toBe(200);
     expect(getResOrg1.body.recordings).toBeDefined();
+  });
+
+  describe('Internal Transcript Ingestion (TASK-001)', () => {
+    let meetingRoomName: string;
+
+    beforeAll(async () => {
+      const user = { id: 'user-ts', email: 'ts@test.com', name: 'UserTS', orgId: 'org-ts' };
+      const createRes = await request(app.getHttpServer())
+        .post('/meetings')
+        .set('Authorization', `Bearer ${getAuthToken(user)}`)
+        .send({ title: 'Transcript Meeting' });
+      meetingRoomName = createRes.body.meeting.roomName;
+    });
+
+    it('should reject requests missing required fields', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/internal/transcripts')
+        .set('Authorization', `Bearer internal-test-key`)
+        .send({
+          roomName: meetingRoomName,
+          // Missing speakerIdentity and text
+          isFinal: true,
+        });
+      
+      expect(res.status).toBe(400);
+    });
+
+    it('should reject requests with undeclared fields (forbidNonWhitelisted)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/internal/transcripts')
+        .set('Authorization', `Bearer internal-test-key`)
+        .send({
+          roomName: meetingRoomName,
+          speakerIdentity: 'agent',
+          text: 'Hello world',
+          isFinal: true,
+          maliciousExtraField: 'drop tables',
+        });
+      
+      expect(res.status).toBe(400);
+    });
+
+    it('should accept valid requests and return 200', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/internal/transcripts')
+        .set('Authorization', `Bearer internal-test-key`)
+        .send({
+          roomName: meetingRoomName,
+          speakerIdentity: 'agent',
+          text: 'Hello world',
+          isFinal: true,
+          confidence: 0.99,
+        });
+      
+      expect(res.status).toBe(200);
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { timingSafeEqual } from 'crypto';
 
 @Injectable()
 export class InternalAuthGuard implements CanActivate {
@@ -23,7 +24,13 @@ export class InternalAuthGuard implements CanActivate {
       throw new UnauthorizedException('Internal token mismatch');
     }
 
-    if (token !== expectedKey) {
+    const tokenBuffer = Buffer.from(token);
+    const expectedKeyBuffer = Buffer.from(expectedKey);
+
+    if (
+      tokenBuffer.length !== expectedKeyBuffer.length ||
+      !timingSafeEqual(tokenBuffer, expectedKeyBuffer)
+    ) {
       throw new UnauthorizedException('Invalid internal token');
     }
 

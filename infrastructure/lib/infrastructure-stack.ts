@@ -17,6 +17,7 @@ export class InfrastructureStack extends cdk.Stack {
     const livekitUrl = this.node.tryGetContext('livekitUrl') || 'wss://quorum-oor689rg.livekit.cloud';
     const domainName = this.node.tryGetContext('domainName') || 'quorum.atma-ai.co.in';
     const apiDomainName = this.node.tryGetContext('apiDomainName') || `api.${domainName}`;
+    const dbResourceId = this.node.tryGetContext('dbResourceId') || 'cluster-cvs68yyk49gx';
 
     // 1. Create a new VPC with Public and Private subnets
     const vpc = new ec2.Vpc(this, 'QuorumVpc', {
@@ -68,14 +69,19 @@ export class InfrastructureStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({
-          JWT_SECRET: 'dev-secret-change-this-in-production',
-          LIVEKIT_API_KEY: 'set-me',
-          LIVEKIT_API_SECRET: 'set-me',
-          S3_ACCESS_KEY_ID: 'set-me',
-          S3_SECRET_ACCESS_KEY: 'set-me',
+          LIVEKIT_API_KEY: '',
+          LIVEKIT_API_SECRET: '',
+          S3_ACCESS_KEY_ID: '',
+          S3_SECRET_ACCESS_KEY: '',
         }),
-        generateStringKey: 'dummy',
+        generateStringKey: 'JWT_SECRET',
+        excludePunctuation: true, // Safe for Bearer tokens
       },
+    });
+
+    new cdk.CfnOutput(this, 'SecretUpdateReminder', {
+      value: secret.secretName,
+      description: 'Update LIVEKIT_API_KEY and other credentials in this Secrets Manager secret via AWS Console',
     });
 
     // Create a certificate for the API Load Balancer
@@ -126,7 +132,7 @@ export class InfrastructureStack extends cdk.Stack {
     // Grant API task permission to connect to RDS using IAM
     apiService.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
       actions: ['rds-db:connect'],
-      resources: ['*'], // In production, restrict to the specific RDS cluster ARN
+      resources: [`arn:aws:rds-db:${this.region}:${this.account}:dbuser:${dbResourceId}/postgres`],
     }));
 
     redisSecurityGroup.connections.allowFrom(apiService.service, ec2.Port.tcp(6379), 'Allow Redis traffic from API');

@@ -64,8 +64,7 @@ export class MeetingsController {
     @Param('id') id: string,
     @Req() req: Request & { user: User },
   ) {
-    await this.meetingsService.findByIdForUser(id, req.user);
-    await this.meetingsService.summonAgent(id);
+    await this.meetingsService.summonAgent(id, req.user);
     return { success: true };
   }
 
@@ -99,8 +98,7 @@ export class MeetingsController {
     @Param('id') id: string,
     @Req() req: Request & { user: User },
   ) {
-    await this.meetingsService.findByIdForUser(id, req.user);
-    const participants = await this.meetingsService.getParticipants(id);
+    const participants = await this.meetingsService.getParticipants(id, req.user);
     return { participants };
   }
 

@@ -57,9 +57,9 @@ export class MeetingsService {
    * Get meeting by ID with org-scoping. Throws if not found or not in user's org.
    */
   async findByIdForUser(id: string, user: User): Promise<Meeting> {
-    const meeting = await this.findById(id);
-    if (meeting.orgId !== user.orgId) {
-      throw new ForbiddenException('You do not have access to this meeting');
+    const meeting = await this.findById(id).catch(() => null);
+    if (!meeting || meeting.orgId !== user.orgId) {
+      throw new ForbiddenException('Meeting not found');
     }
     return meeting;
   }
@@ -97,7 +97,7 @@ export class MeetingsService {
     meetingId: string,
     user: User,
   ): Promise<{ token: string; url: string }> {
-    const meeting = await this.findById(meetingId);
+    const meeting = await this.findByIdForUser(meetingId, user);
 
     if (meeting.status === 'scheduled') {
       meeting.status = 'live';
@@ -149,8 +149,8 @@ export class MeetingsService {
     return this.meetingRepo.save(meeting);
   }
 
-  async summonAgent(meetingId: string) {
-    const meeting = await this.findById(meetingId);
+  async summonAgent(meetingId: string, user: User) {
+    const meeting = await this.findByIdForUser(meetingId, user);
     const agentName = process.env.AGENT_IDENTITY || 'quo-agent';
     return this.livekitService.dispatchAgent(meeting.roomName, agentName);
   }
@@ -174,8 +174,8 @@ export class MeetingsService {
   /**
    * List participants currently in the LiveKit room for a meeting.
    */
-  async getParticipants(meetingId: string) {
-    const meeting = await this.findById(meetingId);
+  async getParticipants(meetingId: string, user: User) {
+    const meeting = await this.findByIdForUser(meetingId, user);
     return this.livekitService.listRoomParticipants(meeting.roomName);
   }
 

@@ -26,7 +26,9 @@ const logger = new Logger('DatabaseModule');
         const dbUser = config.get<string>('database.user') as string;
         const dbRegion = config.get<string>('database.region');
 
-        logger.log(`Connecting to ${iamAuth ? 'IAM-auth' : 'password-auth'} database at ${dbHost}:${dbPort}`);
+        if (process.env.NODE_ENV !== 'production') {
+          logger.log(`Connecting to ${iamAuth ? 'IAM-auth' : 'password-auth'} database at ${dbHost}:${dbPort}`);
+        }
 
         return {
           type: 'postgres' as const,

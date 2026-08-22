@@ -114,6 +114,9 @@ importers:
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.3
@@ -127,7 +130,7 @@ importers:
         specifier: ^1.0.38
         version: 1.0.38
       '@types/supertest':
-        specifier: ^7.0.0
+        specifier: ^7.2.1
         version: 7.2.1
       '@types/uuid':
         specifier: ^10.0.0

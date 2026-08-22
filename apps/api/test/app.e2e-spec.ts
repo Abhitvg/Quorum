@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import cookieParser from 'cookie-parser';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
-  let user1Cookie: string[];
-  let user2Cookie: string[];
+  let user1Cookie: any;
+  let user2Cookie: any;
   let user1MeetingId: string;
 
   beforeAll(async () => {

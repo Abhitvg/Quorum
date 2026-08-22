@@ -6,10 +6,10 @@ applications:
         preBuild:
           commands:
             - npm install -g pnpm@9
-            - cd $CODEBUILD_SRC_DIR && pnpm install
+            - pnpm install
         build:
           commands:
-            - cd $CODEBUILD_SRC_DIR && pnpm run build --filter=web
+            - pnpm run build
       artifacts:
         baseDirectory: .next
         files:

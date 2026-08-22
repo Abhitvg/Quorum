@@ -95,6 +95,7 @@ export class InfrastructureStack extends cdk.Stack {
         image: ecs.ContainerImage.fromAsset('../', {
           file: 'apps/api/Dockerfile',
           exclude: ['node_modules', 'dist', '.next', '.venv', 'infrastructure/cdk.out', '.git'],
+          extraHash: 'v2',
         }),
         containerPort: 3001,
         environment: {
@@ -141,6 +142,7 @@ export class InfrastructureStack extends cdk.Stack {
       image: ecs.ContainerImage.fromAsset('../', {
         file: 'apps/agent/Dockerfile',
         exclude: ['node_modules', 'dist', '.next', '.venv', 'infrastructure/cdk.out', '.git'],
+        extraHash: 'v2',
       }),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'Agent' }),
       environment: {

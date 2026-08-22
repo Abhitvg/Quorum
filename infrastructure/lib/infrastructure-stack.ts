@@ -64,7 +64,8 @@ export class InfrastructureStack extends cdk.Stack {
 
     // We will use a secret for sensitive environment variables
     const secret = new secretsmanager.Secret(this, 'QuorumSecrets', {
-      secretName: 'quorum-production-secrets',
+      secretName: 'quorum-prod-secrets',
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({
           JWT_SECRET: 'dev-secret-change-this-in-production',

@@ -173,37 +173,13 @@ export class InfrastructureStack extends cdk.Stack {
     redisSecurityGroup.connections.allowFrom(agentService, ec2.Port.tcp(6379), 'Allow Redis traffic from Agent');
 
     // 6. Next.js Frontend (AWS Amplify)
-    // Note: The user will need to connect their GitHub repository manually in the AWS Console 
-    // or provide a personal access token. We define the basic structure here.
-    const amplifyApp = new amplify.App(this, 'QuorumWebApp', {
-      appName: 'QuorumWeb',
-      // To automate this completely, we'd use sourceCodeProvider with a GitHub token
-      // sourceCodeProvider: new amplify.GitHubSourceCodeProvider({
-      //   owner: 'Abhitvg',
-      //   repository: 'Quorum',
-      //   oauthToken: cdk.SecretValue.secretsManager('github-token'),
-      // }),
-      environmentVariables: {
-        NEXT_PUBLIC_API_URL: `https://${apiDomainName}`,
-        NEXT_PUBLIC_LIVEKIT_URL: livekitUrl,
-      },
-    });
-
-    const domain = amplifyApp.addDomain(domainName, {
-      enableAutoSubdomain: true,
-      autoSubdomainCreationPatterns: ['*', 'pr*'],
-    });
-    domain.mapRoot(amplifyApp.addBranch('main'));
+    // The Amplify App (d2u63ubbdcyxw1) is managed via the AWS Console/CLI manually,
+    // so we don't provision it via CDK to avoid hitting account limits.
 
     // Outputs
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: apiService.loadBalancer.loadBalancerDnsName,
       description: 'The URL of the API Gateway / Load Balancer',
-    });
-
-    new cdk.CfnOutput(this, 'AmplifyAppId', {
-      value: amplifyApp.appId,
-      description: 'The AWS Amplify App ID. Connect your GitHub repository in the AWS Console.',
     });
   }
 }

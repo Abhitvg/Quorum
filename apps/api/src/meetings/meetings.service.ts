@@ -105,7 +105,7 @@ export class MeetingsService {
       await this.meetingRepo.save(meeting);
 
       // Dispatch the Quo agent to join the room
-      this.summonAgent(meeting.id).catch(e => {
+      this.summonAgent(meeting.id, user).catch(e => {
         this.logger.error('Failed to dispatch agent automatically:', e);
       });
     }

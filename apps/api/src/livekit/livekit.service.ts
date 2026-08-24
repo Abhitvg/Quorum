@@ -1,6 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AccessToken, RoomServiceClient, EgressClient, EncodedFileOutput, EncodedFileType, S3Upload, AgentDispatchClient } from 'livekit-server-sdk';
+import {
+  AccessToken,
+  RoomServiceClient,
+  EgressClient,
+  EncodedFileOutput,
+  EncodedFileType,
+  S3Upload,
+  AgentDispatchClient,
+} from 'livekit-server-sdk';
 
 @Injectable()
 export class LivekitService {
@@ -18,10 +26,21 @@ export class LivekitService {
     this.url = this.config.get<string>('livekit.url', '');
 
     // RoomServiceClient uses the HTTP URL, not the WebSocket URL
-    const httpUrl = this.url.replace('wss://', 'https://').replace('ws://', 'http://');
-    this.roomService = new RoomServiceClient(httpUrl, this.apiKey, this.apiSecret);
+    const httpUrl = this.url
+      .replace('wss://', 'https://')
+      .replace('ws://', 'http://');
+
+    this.roomService = new RoomServiceClient(
+      httpUrl,
+      this.apiKey,
+      this.apiSecret,
+    );
     this.egressClient = new EgressClient(httpUrl, this.apiKey, this.apiSecret);
-    this.agentDispatchClient = new AgentDispatchClient(httpUrl, this.apiKey, this.apiSecret);
+    this.agentDispatchClient = new AgentDispatchClient(
+      httpUrl,
+      this.apiKey,
+      this.apiSecret,
+    );
   }
 
   async dispatchAgent(roomName: string, agentName: string) {
@@ -90,7 +109,12 @@ export class LivekitService {
     trackSid: string,
     muted: boolean,
   ) {
-    return this.roomService.mutePublishedTrack(roomName, identity, trackSid, muted);
+    return this.roomService.mutePublishedTrack(
+      roomName,
+      identity,
+      trackSid,
+      muted,
+    );
   }
 
   /**
@@ -107,7 +131,11 @@ export class LivekitService {
   async updateParticipantPermissions(
     roomName: string,
     identity: string,
-    permissions: { canPublish?: boolean; canSubscribe?: boolean; canPublishData?: boolean },
+    permissions: {
+      canPublish?: boolean;
+      canSubscribe?: boolean;
+      canPublishData?: boolean;
+    },
   ) {
     return this.roomService.updateParticipant(roomName, identity, {
       permission: permissions,
@@ -121,10 +149,22 @@ export class LivekitService {
    * Start a RoomCompositeEgress for the given room.
    */
   async startRoomRecording(roomName: string, filename: string) {
-    const s3AccessKey = this.config.get<string>('livekit.s3AccessKey', process.env.S3_ACCESS_KEY_ID || '');
-    const s3SecretKey = this.config.get<string>('livekit.s3SecretKey', process.env.S3_SECRET_ACCESS_KEY || '');
-    const s3Region = this.config.get<string>('livekit.s3Region', process.env.S3_REGION || 'us-east-1');
-    const s3Bucket = this.config.get<string>('livekit.s3Bucket', process.env.S3_BUCKET || '');
+    const s3AccessKey = this.config.get<string>(
+      'livekit.s3AccessKey',
+      process.env.S3_ACCESS_KEY_ID || '',
+    );
+    const s3SecretKey = this.config.get<string>(
+      'livekit.s3SecretKey',
+      process.env.S3_SECRET_ACCESS_KEY || '',
+    );
+    const s3Region = this.config.get<string>(
+      'livekit.s3Region',
+      process.env.S3_REGION || 'us-east-1',
+    );
+    const s3Bucket = this.config.get<string>(
+      'livekit.s3Bucket',
+      process.env.S3_BUCKET || '',
+    );
 
     const fileOutput = new EncodedFileOutput({
       filepath: filename,
@@ -154,7 +194,7 @@ export class LivekitService {
   /**
    * Broadcast data to all participants in a room via LiveKit Data Channels.
    */
-  async broadcastData(roomName: string, data: any, topic?: string) {
+  async broadcastData(roomName: string, data: unknown, topic?: string) {
     const encoder = new TextEncoder();
     const encodedData = encoder.encode(JSON.stringify(data));
     return this.roomService.sendData(roomName, encodedData, 1, { topic });

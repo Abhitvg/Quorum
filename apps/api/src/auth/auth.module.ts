@@ -18,7 +18,8 @@ import { UsersModule } from '../users/users.module';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('jwt.secret'),
         signOptions: {
-          expiresIn: config.get<string>('jwt.expiration', '7d') as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          expiresIn: config.get<string | number>('jwt.expiration', '7d') as any,
         },
       }),
     }),

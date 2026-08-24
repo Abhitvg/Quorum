@@ -14,6 +14,6 @@ import { TranscriptsController } from './transcripts.controller';
   ],
   controllers: [TranscriptsController],
   providers: [TranscriptsService],
-  exports: [TranscriptsService]
+  exports: [TranscriptsService],
 })
 export class TranscriptsModule {}

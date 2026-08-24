@@ -11,7 +11,6 @@ import AssistantPanel from './AssistantPanel';
 import Whiteboard from './Whiteboard';
 import LivePolls from './LivePolls';
 import MeetingTimer from './MeetingTimer';
-import { useWhisper } from './WhisperContext';
 import HandRaiseQueue from './HandRaiseQueue';
 import MeetingChat from './MeetingChat';
 import SharedNotes from './SharedNotes';
@@ -23,7 +22,6 @@ import MeetingAgenda from './MeetingAgenda';
 
 export default function MeetingControls() {
   const room = useRoomContext();
-  const { localGroup, setLocalGroup } = useWhisper();
   const { toggle: toggleMic, enabled: isMicEnabled } = useTrackToggle({
     source: Track.Source.Microphone,
     room,
@@ -53,61 +51,6 @@ export default function MeetingControls() {
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [showAgenda, setShowAgenda] = useState(false);
   
-  // Recording State
-  const [isRecording, setIsRecording] = useState(false);
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true
-      });
-      
-      const recorder = new MediaRecorder(stream);
-      // @ts-expect-error global scope attachment
-      window.localRecorder = recorder;
-      // @ts-expect-error global scope attachment
-      window.localChunks = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          // @ts-expect-error global scope attachment
-          window.localChunks.push(e.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        // @ts-expect-error global scope attachment
-        const blob = new Blob(window.localChunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `quorum-recording-${new Date().toISOString().split('T')[0]}.webm`;
-        a.click();
-        URL.revokeObjectURL(url);
-        setIsRecording(false);
-      };
-
-      stream.getVideoTracks()[0].onended = () => {
-        recorder.stop();
-      };
-
-      recorder.start();
-      setIsRecording(true);
-    } catch (e) {
-      console.error("Recording failed", e);
-    }
-  };
-
-  const stopRecording = () => {
-    // @ts-expect-error global scope attachment
-    if (window.localRecorder && window.localRecorder.state !== 'inactive') {
-      // @ts-expect-error global scope attachment
-      window.localRecorder.stop();
-      // @ts-expect-error global scope attachment
-      window.localRecorder.stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-    }
-  };
-
   return (
     <>
       {/* Local Identity Pill - Bottom Left */}
@@ -329,19 +272,5 @@ export default function MeetingControls() {
       <MoodCheck isOpen={showMoodCheck} onClose={() => setShowMoodCheck(false)} />
       <MeetingAgenda isOpen={showAgenda} onClose={() => setShowAgenda(false)} />
     </>
-  );
-}
-
-function ToolBtn({ icon, label, onClick, active = false }: { icon: string; label: string; onClick: () => void; active?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
-        active ? 'bg-status-error/20 text-status-error' : 'hover:bg-white/10 text-white'
-      }`}
-    >
-      <span className={`text-xl mb-1 ${active ? 'animate-pulse' : ''}`}>{icon}</span>
-      <span className="text-[10px] font-medium opacity-80">{label}</span>
-    </button>
   );
 }

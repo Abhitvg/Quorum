@@ -64,6 +64,13 @@ const PRESETS: Record<FocusPreset, FocusConfig> = {
   },
 };
 
+declare global {
+  interface Window {
+    __quorumFocusMode?: FocusPreset;
+    __quorumFocusConfig?: FocusConfig;
+  }
+}
+
 export default function FocusMode({ isOpen, onClose }: FocusModeProps) {
   const room = useRoomContext();
   const [activePreset, setActivePreset] = useState<FocusPreset>('none');
@@ -90,8 +97,8 @@ export default function FocusMode({ isOpen, onClose }: FocusModeProps) {
     }
 
     // Store globally for other components to check
-    (window as any).__quorumFocusMode = preset;
-    (window as any).__quorumFocusConfig = config;
+    window.__quorumFocusMode = preset;
+    window.__quorumFocusConfig = config;
 
     // Auto-mute if needed
     if (config.autoMute && room.localParticipant.isMicrophoneEnabled) {

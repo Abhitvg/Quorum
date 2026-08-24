@@ -59,7 +59,9 @@ export class TranscriptsController {
   ) {
     const meeting = await this.meetingsService.findById(meetingId);
     if (meeting.orgId !== req.user.orgId) {
-      throw new ForbiddenException('Cannot access transcripts for this meeting');
+      throw new ForbiddenException(
+        'Cannot access transcripts for this meeting',
+      );
     }
 
     const transcripts = await this.transcriptsService.getTranscripts(meetingId);

@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Body,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Body, Req, UseGuards } from '@nestjs/common';
 import { IsString, IsOptional, IsUrl } from 'class-validator';
 import { Request } from 'express';
 import { UsersService } from './users.service';
@@ -29,7 +22,7 @@ export class UsersController {
 
   @Get('me')
   async getMe(@Req() req: Request & { user: User }) {
-    // The JwtAuthGuard populates req.user. We can just return it, 
+    // The JwtAuthGuard populates req.user. We can just return it,
     // or fetch the latest from the database to be safe.
     const user = await this.usersService.findById(req.user.id);
     return { user };

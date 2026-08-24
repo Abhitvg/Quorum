@@ -6,8 +6,8 @@ import cookieParser from 'cookie-parser';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
-  let user1Cookie: any;
-  let user2Cookie: any;
+  let user1Cookie: string[];
+  let user2Cookie: string[];
   let user1MeetingId: string;
 
   beforeAll(async () => {
@@ -35,9 +35,11 @@ describe('AppController (e2e)', () => {
         })
         .expect(201);
 
-      expect(response.body.user).toBeDefined();
-      expect(response.body.user.email).toBe('alice@example.com');
-      
+      expect((response.body as { user: { email: string } }).user).toBeDefined();
+      expect((response.body as { user: { email: string } }).user.email).toBe(
+        'alice@example.com',
+      );
+
       const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
       expect(cookies[0]).toMatch(/qr_token=/);
@@ -50,7 +52,9 @@ describe('AppController (e2e)', () => {
         .set('Cookie', user1Cookie)
         .expect(200);
 
-      expect(response.body.user.name).toBe('Alice');
+      expect((response.body as { user: { name: string } }).user.name).toBe(
+        'Alice',
+      );
     });
 
     it('should reject unauthenticated access to /auth/me', async () => {
@@ -81,7 +85,7 @@ describe('AppController (e2e)', () => {
           name: 'Bob',
         })
         .expect(201);
-      
+
       user2Cookie = response.headers['set-cookie'];
     });
 
@@ -92,9 +96,16 @@ describe('AppController (e2e)', () => {
         .send({ title: 'Alice Sync' })
         .expect(201);
 
-      expect(response.body.meeting).toBeDefined();
-      expect(response.body.meeting.title).toBe('Alice Sync');
-      user1MeetingId = response.body.meeting.id;
+      expect(
+        (response.body as { meeting: { title: string; id: string } }).meeting,
+      ).toBeDefined();
+      expect(
+        (response.body as { meeting: { title: string; id: string } }).meeting
+          .title,
+      ).toBe('Alice Sync');
+      user1MeetingId = (
+        response.body as { meeting: { title: string; id: string } }
+      ).meeting.id;
     });
 
     it('user1 can see their meeting', async () => {
@@ -103,18 +114,24 @@ describe('AppController (e2e)', () => {
         .set('Cookie', user1Cookie)
         .expect(200);
 
-      expect(response.body.meetings.length).toBeGreaterThanOrEqual(1);
-      const meeting = response.body.meetings.find((m: any) => m.id === user1MeetingId);
+      expect(
+        (response.body as { meetings: unknown[] }).meetings.length,
+      ).toBeGreaterThanOrEqual(1);
+      const meeting = (
+        response.body as { meetings: Array<Record<string, unknown>> }
+      ).meetings.find((m: Record<string, unknown>) => m.id === user1MeetingId);
       expect(meeting).toBeDefined();
     });
 
-    it('user2 cannot see user1\'s meeting in list', async () => {
+    it("user2 cannot see user1's meeting in list", async () => {
       const response = await request(app.getHttpServer())
         .get('/meetings')
         .set('Cookie', user2Cookie)
         .expect(200);
 
-      const meeting = response.body.meetings.find((m: any) => m.id === user1MeetingId);
+      const meeting = (
+        response.body as { meetings: Array<Record<string, unknown>> }
+      ).meetings.find((m: Record<string, unknown>) => m.id === user1MeetingId);
       expect(meeting).toBeUndefined(); // Should not be in the list
     });
   });
@@ -126,8 +143,10 @@ describe('AppController (e2e)', () => {
         .set('Cookie', user2Cookie)
         .send({ trackSid: 'TR_123', muted: true })
         .expect(403);
-      
-      expect(response.body.message).toBe('Only the host can perform this action');
+
+      expect((response.body as { message: string }).message).toBe(
+        'Only the host can perform this action',
+      );
     });
 
     it('should reject kick participant request from non-host (user2)', async () => {
@@ -135,8 +154,10 @@ describe('AppController (e2e)', () => {
         .delete(`/meetings/${user1MeetingId}/participants/some-identity`)
         .set('Cookie', user2Cookie)
         .expect(403);
-      
-      expect(response.body.message).toBe('Only the host can perform this action');
+
+      expect((response.body as { message: string }).message).toBe(
+        'Only the host can perform this action',
+      );
     });
   });
 });

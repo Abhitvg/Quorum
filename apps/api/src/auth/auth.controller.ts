@@ -32,14 +32,6 @@ class RegisterDto {
   name: string;
 }
 
-class LoginDto {
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  password: string;
-}
-
 // --- Controller ---
 
 @Controller('auth')
@@ -63,7 +55,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('local'))
-  async login(
+  login(
     @Req() req: Request & { user: User },
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -73,14 +65,14 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Res({ passthrough: true }) res: Response) {
+  logout(@Res({ passthrough: true }) res: Response) {
     this.authService.clearAuthCookie(res);
     return { message: 'Logged out' };
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@Req() req: Request & { user: User }) {
+  me(@Req() req: Request & { user: User }) {
     return { user: this.authService.sanitizeUser(req.user) };
   }
 }

@@ -10,7 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { IsString, MinLength, IsBoolean, IsOptional } from 'class-validator';
+import { IsString, MinLength, IsBoolean } from 'class-validator';
 import { Request } from 'express';
 import { MeetingsService } from './meetings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -51,10 +51,7 @@ export class MeetingsController {
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @Req() req: Request & { user: User },
-  ) {
+  async findOne(@Param('id') id: string, @Req() req: Request & { user: User }) {
     const meeting = await this.meetingsService.findByIdForUser(id, req.user);
     return { meeting };
   }
@@ -78,10 +75,7 @@ export class MeetingsController {
 
   @Post(':id/end')
   @HttpCode(HttpStatus.OK)
-  async end(
-    @Param('id') id: string,
-    @Req() req: Request & { user: User },
-  ) {
+  async end(@Param('id') id: string, @Req() req: Request & { user: User }) {
     const meeting = await this.meetingsService.endMeeting(id, req.user);
     return { meeting };
   }
@@ -98,7 +92,10 @@ export class MeetingsController {
     @Param('id') id: string,
     @Req() req: Request & { user: User },
   ) {
-    const participants = await this.meetingsService.getParticipants(id, req.user);
+    const participants = await this.meetingsService.getParticipants(
+      id,
+      req.user,
+    );
     return { participants };
   }
 
@@ -157,7 +154,11 @@ export class MeetingsController {
     @Body('egressId') egressId: string,
     @Req() req: Request & { user: User },
   ) {
-    const recording = await this.meetingsService.stopRecording(id, egressId, req.user);
+    const recording = await this.meetingsService.stopRecording(
+      id,
+      egressId,
+      req.user,
+    );
     return { recording };
   }
 

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -105,7 +110,7 @@ export class MeetingsService {
       await this.meetingRepo.save(meeting);
 
       // Dispatch the Quo agent to join the room
-      this.summonAgent(meeting.id, user).catch(e => {
+      this.summonAgent(meeting.id, user).catch((e) => {
         this.logger.error('Failed to dispatch agent automatically:', e);
       });
     }
@@ -201,11 +206,7 @@ export class MeetingsService {
   /**
    * Kick a participant from the room (host only).
    */
-  async kickParticipant(
-    meetingId: string,
-    identity: string,
-    user: User,
-  ) {
+  async kickParticipant(meetingId: string, identity: string, user: User) {
     const meeting = await this.validateHost(meetingId, user);
     return this.livekitService.removeParticipant(meeting.roomName, identity);
   }
@@ -215,12 +216,15 @@ export class MeetingsService {
 
   async startRecording(meetingId: string, user: User) {
     const meeting = await this.validateHost(meetingId, user);
-    
+
     const filename = `recording_${meeting.id}_${Date.now()}.mp4`;
 
     try {
-      const egressInfo = await this.livekitService.startRoomRecording(meeting.roomName, filename);
-      
+      const egressInfo = await this.livekitService.startRoomRecording(
+        meeting.roomName,
+        filename,
+      );
+
       const recording = this.recordingRepo.create({
         egressId: egressInfo.egressId,
         meetingId: meeting.id,
@@ -237,10 +241,12 @@ export class MeetingsService {
 
   async stopRecording(meetingId: string, egressId: string, user: User) {
     const meeting = await this.validateHost(meetingId, user);
-    const recording = await this.recordingRepo.findOne({ where: { egressId, meetingId: meeting.id } });
+    const recording = await this.recordingRepo.findOne({
+      where: { egressId, meetingId: meeting.id },
+    });
     if (!recording) throw new NotFoundException('Recording not found');
 
-    const egressInfo = await this.livekitService.stopRoomRecording(egressId);
+    await this.livekitService.stopRoomRecording(egressId);
     recording.status = 'stopping';
     await this.recordingRepo.save(recording);
     return recording;
@@ -257,13 +263,17 @@ export class MeetingsService {
     });
   }
 
-  async updateRecordingEgress(egressId: string, status: string, durationMs?: number) {
+  async updateRecordingEgress(
+    egressId: string,
+    status: string,
+    durationMs?: number,
+  ) {
     const recording = await this.recordingRepo.findOne({ where: { egressId } });
     if (!recording) {
       this.logger.warn(`Recording not found for egressId: ${egressId}`);
       return;
     }
-    
+
     recording.status = status;
     if (durationMs) {
       recording.durationMs = durationMs;

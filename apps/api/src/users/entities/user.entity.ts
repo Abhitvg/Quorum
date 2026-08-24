@@ -17,7 +17,12 @@ export class User {
   @Column({ length: 255, unique: true })
   email: string;
 
-  @Column({ name: 'password_hash', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'password_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   passwordHash: string | null;
 
   @Column({ length: 255 })
@@ -33,7 +38,13 @@ export class User {
   @JoinColumn({ name: 'org_id' })
   org: Org;
 
-  @Column({ name: 'google_id', type: 'varchar', length: 255, nullable: true, unique: true })
+  @Column({
+    name: 'google_id',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    unique: true,
+  })
   googleId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })

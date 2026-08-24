@@ -1,5 +1,19 @@
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
-import { IsString, IsBoolean, IsNumber, IsNotEmpty, IsOptional } from 'class-validator';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  IsString,
+  IsBoolean,
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+} from 'class-validator';
 import { InternalAuthGuard } from './guards/internal-auth.guard';
 import { TranscriptsService } from '../transcripts/transcripts.service';
 import { MeetingsService } from '../meetings/meetings.service';
@@ -54,7 +68,7 @@ export class InternalController {
     let meeting;
     try {
       meeting = await this.meetingsService.findByRoomName(dto.roomName);
-    } catch (e) {
+    } catch {
       throw new NotFoundException('Meeting not found');
     }
 
@@ -81,10 +95,14 @@ export class InternalController {
         text: dto.text,
         isFinal: dto.isFinal,
         timestamp: Date.now(),
-      }
+      },
     };
-    
-    await this.livekitService.broadcastData(meeting.roomName, payload, 'transcript');
+
+    await this.livekitService.broadcastData(
+      meeting.roomName,
+      payload,
+      'transcript',
+    );
 
     return { success: true };
   }

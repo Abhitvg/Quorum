@@ -19,7 +19,9 @@ export default () => ({
   },
 
   jwt: {
-    secret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-secret-change-me'),
+    secret:
+      process.env.JWT_SECRET ||
+      (process.env.NODE_ENV === 'production' ? '' : 'dev-secret-change-me'),
     expiration: process.env.JWT_EXPIRATION || '7d',
   },
 
@@ -43,4 +45,3 @@ export default () => ({
 
   internalApiKey: process.env.INTERNAL_API_KEY || '',
 });
-

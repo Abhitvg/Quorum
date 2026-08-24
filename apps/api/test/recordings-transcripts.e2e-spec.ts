@@ -9,7 +9,9 @@ describe('Recordings and Transcripts (e2e)', () => {
   let jwtService: JwtService;
 
   const mockLivekitService = {
-    startRoomRecording: jest.fn().mockResolvedValue({ egressId: 'mock-egress-id' }),
+    startRoomRecording: jest
+      .fn()
+      .mockResolvedValue({ egressId: 'mock-egress-id' }),
     stopRoomRecording: jest.fn().mockResolvedValue({}),
     broadcastData: jest.fn().mockResolvedValue(null),
     generateToken: jest.fn().mockResolvedValue('mock-token'),
@@ -25,11 +27,13 @@ describe('Recordings and Transcripts (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ 
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true 
-    }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
 
     jwtService = app.get(JwtService);
@@ -39,22 +43,38 @@ describe('Recordings and Transcripts (e2e)', () => {
     await app.close();
   });
 
-  const getAuthToken = (user: any) => jwtService.sign(user);
+  const getAuthToken = (user: Record<string, unknown>) => jwtService.sign(user);
 
   it('org isolation: user2 cannot view recordings for user1 meeting, but user3 (same org) can', async () => {
     // 1. Setup users
-    const user1 = { id: 'user1', email: 'u1@test.com', name: 'User1', orgId: 'org1' };
-    const user2 = { id: 'user2', email: 'u2@test.com', name: 'User2', orgId: 'org2' }; // Different org
-    const user3 = { id: 'user3', email: 'u3@test.com', name: 'User3', orgId: 'org1' }; // Same org as user1
+    const user1 = {
+      id: 'user1',
+      email: 'u1@test.com',
+      name: 'User1',
+      orgId: 'org1',
+    };
+    const user2 = {
+      id: 'user2',
+      email: 'u2@test.com',
+      name: 'User2',
+      orgId: 'org2',
+    }; // Different org
+    const user3 = {
+      id: 'user3',
+      email: 'u3@test.com',
+      name: 'User3',
+      orgId: 'org1',
+    }; // Same org as user1
 
     // 2. user1 creates meeting
     const createRes = await request(app.getHttpServer())
       .post('/meetings')
       .set('Authorization', `Bearer ${getAuthToken(user1)}`)
       .send({ title: 'Org1 Meeting' });
-    
+
     expect(createRes.status).toBe(201);
-    const meetingId = createRes.body.meeting.id;
+    const meetingId = (createRes.body as { meeting: { id: string } }).meeting
+      .id;
 
     // 3. user2 (org2) attempts to access user1's meeting (org1) -> 403 Forbidden
     const getResOrg2 = await request(app.getHttpServer())
@@ -88,19 +108,27 @@ describe('Recordings and Transcripts (e2e)', () => {
       .send();
 
     expect(getResOrg1.status).toBe(200);
-    expect(getResOrg1.body.recordings).toBeDefined();
+    expect(
+      (getResOrg1.body as { recordings: unknown[] }).recordings,
+    ).toBeDefined();
   });
 
   describe('Internal Transcript Ingestion (TASK-001)', () => {
     let meetingRoomName: string;
 
     beforeAll(async () => {
-      const user = { id: 'user-ts', email: 'ts@test.com', name: 'UserTS', orgId: 'org-ts' };
+      const user = {
+        id: 'user-ts',
+        email: 'ts@test.com',
+        name: 'UserTS',
+        orgId: 'org-ts',
+      };
       const createRes = await request(app.getHttpServer())
         .post('/meetings')
         .set('Authorization', `Bearer ${getAuthToken(user)}`)
         .send({ title: 'Transcript Meeting' });
-      meetingRoomName = createRes.body.meeting.roomName;
+      meetingRoomName = (createRes.body as { meeting: { roomName: string } })
+        .meeting.roomName;
     });
 
     it('should reject requests missing required fields', async () => {
@@ -112,7 +140,7 @@ describe('Recordings and Transcripts (e2e)', () => {
           // Missing speakerIdentity and text
           isFinal: true,
         });
-      
+
       expect(res.status).toBe(400);
     });
 
@@ -127,7 +155,7 @@ describe('Recordings and Transcripts (e2e)', () => {
           isFinal: true,
           maliciousExtraField: 'drop tables',
         });
-      
+
       expect(res.status).toBe(400);
     });
 
@@ -142,7 +170,7 @@ describe('Recordings and Transcripts (e2e)', () => {
           isFinal: true,
           confidence: 0.99,
         });
-      
+
       expect(res.status).toBe(200);
     });
   });

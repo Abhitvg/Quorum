@@ -37,26 +37,10 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   const [joined, setJoined] = useState(false);
   const [disconnected, setDisconnected] = useState(false);
 
-  // Dynamic public API states for lobby
-  const [bgImageUrl, setBgImageUrl] = useState('');
-  const [trivia, setTrivia] = useState<{ q: string; a: string } | null>(null);
-  const [showTriviaAnswer, setShowTriviaAnswer] = useState(false);
-  const [catFact, setCatFact] = useState('');
-  const [kanyeQuote, setKanyeQuote] = useState('Join meeting');
-  
   // E2EE
   const [e2eeKey, setE2eeKey] = useState('');
   const [e2eeProvider, setE2eeProvider] = useState<ExternalE2EEKeyProvider | undefined>(undefined);
 
-  useEffect(() => {
-    if (!joined) {
-      // 1. Static Mesh Background instead of random Picsum (to reduce 3rd party calls)
-      // bgImageUrl can just be omitted, relying on the static bg styling already in place.
-      
-      // Removed open trivia, catfact, and kanye APIs for privacy/CSP reduction
-      setKanyeQuote('Join meeting');
-    }
-  }, [joined]);
 
   useEffect(() => {
     if (loading) return;
@@ -150,13 +134,6 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   if (!joined) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#000] relative overflow-hidden">
-        {/* Dynamic Image Background */}
-        {bgImageUrl && (
-          <div 
-            className="fixed inset-0 pointer-events-none opacity-40 transition-opacity duration-1000 bg-cover bg-center"
-            style={{ backgroundImage: `url(${bgImageUrl})` }}
-          />
-        )}
         {/* Gradient Overlay for blend */}
         <div className="fixed inset-0 pointer-events-none mix-blend-multiply bg-gradient-to-br from-surface-900/80 to-[#000]" />
         
@@ -180,37 +157,8 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                 </div>
                 <span className="text-sm font-medium text-white">{user?.name}</span>
               </div>
-              
-              {/* Cat Fact overlay */}
-              {catFact && (
-                <div className="absolute bottom-0 inset-x-0 p-3 bg-black/60 backdrop-blur-sm border-t border-white/10 text-xs text-text-secondary text-left">
-                  <span className="font-bold text-accent-light">Cat Fact:</span> {catFact}
-                </div>
-              )}
             </div>
-            
-            {/* Trivia Section */}
-            {trivia ? (
-              <div className="mb-6 bg-white/5 border border-white/10 rounded-xl p-4 text-left">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">🤔</span>
-                  <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Trivia Time</span>
-                </div>
-                <p className="text-sm text-white font-medium mb-3">{trivia.q}</p>
-                {showTriviaAnswer ? (
-                  <p className="text-sm text-accent-light animate-fade-in font-bold">A: {trivia.a}</p>
-                ) : (
-                  <button 
-                    onClick={() => setShowTriviaAnswer(true)}
-                    className="text-xs px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white transition-colors"
-                  >
-                    Reveal Answer
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="h-24 mb-6" /> // spacer if loading
-            )}
+
 
             {/* Controls preview */}
             <div className="flex items-center justify-center gap-4 mb-6">
@@ -251,7 +199,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
               <Button 
                 className="flex-1" 
                 onClick={handleJoin}
-                title={kanyeQuote} // Kanye API Tooltip
+                title="Join meeting"
               >
                 Join now
               </Button>

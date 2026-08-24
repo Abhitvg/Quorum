@@ -27,7 +27,9 @@ const logger = new Logger('DatabaseModule');
         const dbRegion = config.get<string>('database.region');
 
         if (process.env.NODE_ENV !== 'production') {
-          logger.log(`Connecting to ${iamAuth ? 'IAM-auth' : 'password-auth'} database at ${dbHost}:${dbPort}`);
+          logger.log(
+            `Connecting to ${iamAuth ? 'IAM-auth' : 'password-auth'} database at ${dbHost}:${dbPort}`,
+          );
         }
 
         return {
@@ -52,7 +54,7 @@ const logger = new Logger('DatabaseModule');
                       });
                       return await signer.getAuthToken();
                     }
-                  : (config.get<string>('database.password') as string),
+                  : config.get<string>('database.password'),
                 ...(iamAuth ? { ssl: { rejectUnauthorized: false } } : {}),
               }),
           autoLoadEntities: true,

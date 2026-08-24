@@ -19,10 +19,12 @@ import configuration from './config/configuration';
       envFilePath: ['.env.local', '.env'],
       load: [configuration],
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,   // 1 minute window
-      limit: 60,    // 60 requests per minute
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute window
+        limit: 60, // 60 requests per minute
+      },
+    ]),
     DatabaseModule,
     AuthModule,
     UsersModule,
@@ -48,4 +50,3 @@ import configuration from './config/configuration';
   ],
 })
 export class AppModule {}
-

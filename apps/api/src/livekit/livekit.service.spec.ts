@@ -12,10 +12,13 @@ const mockRoomServiceClient = {
 };
 
 jest.mock('livekit-server-sdk', () => {
-  const actual = jest.requireActual('livekit-server-sdk');
+  const actual =
+    jest.requireActual<Record<string, unknown>>('livekit-server-sdk');
   return {
     ...actual,
-    RoomServiceClient: jest.fn().mockImplementation(() => mockRoomServiceClient),
+    RoomServiceClient: jest
+      .fn()
+      .mockImplementation(() => mockRoomServiceClient),
   };
 });
 
@@ -31,7 +34,7 @@ describe('LivekitService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn((key: string, defaultVal?: any) => {
+            get: jest.fn((key: string, defaultVal?: unknown) => {
               if (key === 'livekit.apiKey') return 'test-api-key';
               if (key === 'livekit.apiSecret') return 'test-api-secret';
               if (key === 'livekit.url') return 'wss://test.livekit.cloud';
@@ -58,7 +61,12 @@ describe('LivekitService', () => {
       const tokenString = await service.generateToken(roomName, identity, name);
       expect(typeof tokenString).toBe('string');
 
-      const decoded = jwt.decode(tokenString) as any;
+      const decoded = jwt.decode(tokenString) as {
+        iss: string;
+        sub: string;
+        name: string;
+        video: { roomJoin: boolean; room: string };
+      };
       expect(decoded).toBeDefined();
       expect(decoded.iss).toBe('test-api-key');
       expect(decoded.sub).toBe(identity);
@@ -77,14 +85,24 @@ describe('LivekitService', () => {
       ]);
 
       const result = await service.listRoomParticipants('qr-12345');
-      expect(mockRoomServiceClient.listParticipants).toHaveBeenCalledWith('qr-12345');
+      expect(mockRoomServiceClient.listParticipants).toHaveBeenCalledWith(
+        'qr-12345',
+      );
       expect(result).toHaveLength(2);
     });
 
     it('should mute a participant track', async () => {
-      mockRoomServiceClient.mutePublishedTrack.mockResolvedValue({ sid: 'TR_123', muted: true });
+      mockRoomServiceClient.mutePublishedTrack.mockResolvedValue({
+        sid: 'TR_123',
+        muted: true,
+      });
 
-      const result = await service.muteParticipant('qr-12345', 'user-1', 'TR_123', true);
+      const result = await service.muteParticipant(
+        'qr-12345',
+        'user-1',
+        'TR_123',
+        true,
+      );
       expect(mockRoomServiceClient.mutePublishedTrack).toHaveBeenCalledWith(
         'qr-12345',
         'user-1',
@@ -98,11 +116,16 @@ describe('LivekitService', () => {
       mockRoomServiceClient.removeParticipant.mockResolvedValue(undefined);
 
       await service.removeParticipant('qr-12345', 'user-1');
-      expect(mockRoomServiceClient.removeParticipant).toHaveBeenCalledWith('qr-12345', 'user-1');
+      expect(mockRoomServiceClient.removeParticipant).toHaveBeenCalledWith(
+        'qr-12345',
+        'user-1',
+      );
     });
 
     it('should update participant permissions', async () => {
-      mockRoomServiceClient.updateParticipant.mockResolvedValue({ identity: 'user-1' });
+      mockRoomServiceClient.updateParticipant.mockResolvedValue({
+        identity: 'user-1',
+      });
 
       await service.updateParticipantPermissions('qr-12345', 'user-1', {
         canPublish: false,

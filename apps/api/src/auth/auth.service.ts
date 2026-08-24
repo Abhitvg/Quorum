@@ -32,7 +32,10 @@ export class AuthService {
   /**
    * Validate email/password credentials.
    */
-  async validateCredentials(email: string, password: string): Promise<User | null> {
+  async validateCredentials(
+    email: string,
+    password: string,
+  ): Promise<User | null> {
     return this.usersService.validateCredentials(email, password);
   }
 

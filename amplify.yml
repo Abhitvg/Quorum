@@ -5,10 +5,11 @@ applications:
       phases:
         preBuild:
           commands:
-            - npm install
+            - npm install -g pnpm@9
+            - cd ../.. && pnpm install
         build:
           commands:
-            - npm run build
+            - cd ../.. && pnpm --filter @quorum/web build
       artifacts:
         baseDirectory: .next
         files:

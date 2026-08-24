@@ -11,7 +11,7 @@ import { AuthService, JwtPayload } from '../auth.service';
  */
 function extractFromCookie(req: Request): string | null {
   if (req?.cookies?.qr_token) {
-    return req.cookies.qr_token;
+    return req.cookies.qr_token as string;
   }
   return null;
 }

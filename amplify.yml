@@ -6,7 +6,7 @@ applications:
         preBuild:
           commands:
             - npm install -g pnpm@9
-            - cd ../.. && pnpm install --shamefully-hoist
+            - cd ../.. && pnpm install
         build:
           commands:
             - cd ../.. && pnpm --filter @quorum/web build

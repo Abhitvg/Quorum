@@ -163,7 +163,7 @@ export class InfrastructureStack extends cdk.Stack {
     // =========================================================================
     // 7. Managed Node Group — worker nodes for running pods
     // =========================================================================
-    const userData = ec2.MultipartUserData.forLinux();
+    const userData = new ec2.MultipartUserData();
     userData.addPart(ec2.MultipartBody.fromRawBody({
       contentType: 'text/x-shellscript; charset="us-ascii"',
       body: `#!/bin/bash

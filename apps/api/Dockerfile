@@ -12,6 +12,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 # Copy source code
 COPY apps/api ./apps/api
 COPY apps/web/package.json ./apps/web/package.json
+COPY packages ./packages
 # We don't need the actual source code of web or agent to build API, just their package.json to satisfy workspace
 
 # Install dependencies and build
@@ -28,12 +29,11 @@ RUN npm install -g pnpm
 # Copy package configurations
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
+COPY packages ./packages
 
 # Install production dependencies only
 RUN pnpm install --prod --filter=@quorum/api...
 
-# Install dd-trace for Datadog APM
-RUN cd apps/api && npm install dd-trace@latest --no-save
 
 # Copy compiled code
 COPY --from=builder /app/apps/api/dist ./apps/api/dist

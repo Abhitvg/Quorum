@@ -186,8 +186,8 @@ API_SERVER_URL=$(aws eks describe-cluster --name QuorumCluster --region eu-north
         new ec2.InstanceType('t3.micro'),
       ],
       minSize: 2,
-      maxSize: 4,
-      desiredSize: 4,
+      maxSize: 3,
+      desiredSize: 2,
       subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       launchTemplateSpec: {
         id: nodeLaunchTemplate.launchTemplateId!,

@@ -3,8 +3,8 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install pnpm and turbo
-RUN npm install -g pnpm turbo
+# Install build dependencies, pnpm and turbo
+RUN apk add --no-cache python3 make g++ git && npm install -g pnpm turbo
 
 # Copy root configurations
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
@@ -24,7 +24,7 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-RUN npm install -g pnpm
+RUN apk add --no-cache python3 make g++ && npm install -g pnpm
 
 # Copy package configurations
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

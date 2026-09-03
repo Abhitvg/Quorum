@@ -53,6 +53,10 @@ spec:
               value: "--require dd-trace/init"
             - name: GOOGLE_CALLBACK_URL
               value: "https://api.quorum.atma-ai.co.in/auth/google/callback"
+            - name: GITHUB_CALLBACK_URL
+              value: "https://api.quorum.atma-ai.co.in/auth/github/callback"
+            - name: FRONTEND_URL
+              value: "https://app.quorum.atma-ai.co.in"
             - name: NEXT_PUBLIC_API_URL
               value: "https://api.quorum.atma-ai.co.in"
           resources:

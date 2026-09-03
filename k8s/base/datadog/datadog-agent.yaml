@@ -1,0 +1,97 @@
+# Datadog Agent configuration using the Datadog Operator.
+#
+# Prerequisites (run once):
+#   helm repo add datadog https://helm.datadoghq.com
+#   helm install datadog-operator datadog/datadog-operator --namespace datadog --create-namespace
+#   kubectl create secret generic datadog-secret --from-literal api-key=<YOUR_DD_API_KEY> -n datadog
+#
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+  namespace: datadog
+spec:
+  global:
+    clusterName: QuorumCluster
+    site: datadoghq.com
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+    tags:
+      - "env:production"
+      - "project:quorum"
+
+  features:
+    # APM — distributed tracing across all services
+    apm:
+      enabled: true
+      hostPortConfig:
+        enabled: true
+        hostPort: 8126
+
+    # Log collection from all containers
+    logCollection:
+      enabled: true
+      containerCollectAll: true
+
+    # Live processes — see running processes per container
+    liveProcessCollection:
+      enabled: true
+
+    # Live containers — real-time container monitoring
+    liveContainerCollection:
+      enabled: true
+
+    # NPM — network performance monitoring between services
+    npm:
+      enabled: true
+
+    # Cluster-level checks and event collection
+    clusterChecks:
+      enabled: true
+      useClusterChecksRunners: true
+
+    # Admission controller — auto-injects APM library config
+    admissionController:
+      enabled: true
+      mutateUnlabelled: false
+
+    # Prometheus metrics scraping
+    prometheusScrape:
+      enabled: true
+
+    # Orchestrator explorer — K8s resource visibility
+    orchestratorExplorer:
+      enabled: true
+
+  override:
+    # Node Agent overrides
+    nodeAgent:
+      tolerations:
+        - operator: Exists
+      env:
+        - name: DD_CONTAINER_EXCLUDE
+          value: "name:datadog-agent"
+      containers:
+        agent:
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+    # Cluster Agent overrides
+    clusterAgent:
+      replicas: 2
+      containers:
+        cluster-agent:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi

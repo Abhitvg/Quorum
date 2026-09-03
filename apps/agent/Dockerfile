@@ -6,10 +6,10 @@ WORKDIR /app
 
 # Install dependencies
 COPY apps/agent/pyproject.toml .
-RUN pip install .
+RUN pip install . && pip install ddtrace
 
 # Copy agent code
 COPY apps/agent/src ./src
 
-# Command to run the agent
-CMD ["python", "-m", "src.agent"]
+# Command to run the agent with Datadog APM auto-instrumentation
+CMD ["ddtrace-run", "python", "-m", "src.agent"]

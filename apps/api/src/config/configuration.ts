@@ -33,6 +33,14 @@ export default () => ({
       'http://localhost:3001/auth/google/callback',
   },
 
+  github: {
+    clientId: process.env.GITHUB_CLIENT_ID || '',
+    clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+    callbackUrl:
+      process.env.GITHUB_CALLBACK_URL ||
+      'http://localhost:3001/auth/github/callback',
+  },
+
   livekit: {
     apiKey: process.env.LIVEKIT_API_KEY || '',
     apiSecret: process.env.LIVEKIT_API_SECRET || '',

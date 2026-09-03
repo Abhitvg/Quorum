@@ -12,6 +12,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import type { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { IsEmail, IsString, MinLength } from 'class-validator';
@@ -36,7 +37,10 @@ class RegisterDto {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Post('register')
   async register(
@@ -74,5 +78,43 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@Req() req: Request & { user: User }) {
     return { user: this.authService.sanitizeUser(req.user) };
+  }
+
+  // --- Google OAuth ---
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleLogin() {
+    // Guard redirects to Google
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  googleCallback(
+    @Req() req: Request & { user: User },
+    @Res() res: Response,
+  ) {
+    this.authService.setAuthCookie(res, req.user);
+    const frontendUrl = this.config.get<string>('frontendUrl') || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/dashboard`);
+  }
+
+  // --- GitHub OAuth ---
+
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  githubLogin() {
+    // Guard redirects to GitHub
+  }
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  githubCallback(
+    @Req() req: Request & { user: User },
+    @Res() res: Response,
+  ) {
+    this.authService.setAuthCookie(res, req.user);
+    const frontendUrl = this.config.get<string>('frontendUrl') || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/dashboard`);
   }
 }

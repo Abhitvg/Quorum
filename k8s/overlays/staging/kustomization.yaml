@@ -1,0 +1,77 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: quorum-staging
+
+resources:
+  - ../../base
+
+patches:
+  # 2 replicas for API and Web in staging
+  - target:
+      kind: Deployment
+      name: quorum-api
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: quorum-web
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: quorum-agent
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  # Staging hostnames
+  - target:
+      kind: Ingress
+      name: quorum-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.quorum.atma-ai.co.in
+      - op: replace
+        path: /spec/rules/1/host
+        value: api-staging.quorum.atma-ai.co.in
+  # Staging image tags (overridden by CI/CD)
+  - target:
+      kind: Deployment
+      name: quorum-api
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: 238158254662.dkr.ecr.eu-north-1.amazonaws.com/quorum-api:staging
+  - target:
+      kind: Deployment
+      name: quorum-web
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: 238158254662.dkr.ecr.eu-north-1.amazonaws.com/quorum-web:staging
+  - target:
+      kind: Deployment
+      name: quorum-agent
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: 238158254662.dkr.ecr.eu-north-1.amazonaws.com/quorum-agent:staging
+  # Staging ConfigMap overrides
+  - target:
+      kind: ConfigMap
+      name: quorum-config
+    patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: quorum-config
+      data:
+        DD_ENV: "staging"
+        DD_TRACE_SAMPLE_RATE: "1"
+        NEXT_PUBLIC_API_URL: "https://api-staging.quorum.atma-ai.co.in"

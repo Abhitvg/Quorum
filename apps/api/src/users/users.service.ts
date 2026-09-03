@@ -89,6 +89,48 @@ export class UsersService {
   }
 
   /**
+   * Find a user by their GitHub ID.
+   */
+  async findByGithubId(githubId: string): Promise<User | null> {
+    return this.userRepo.findOneBy({ githubId });
+  }
+
+  /**
+   * Create or find a user via GitHub OAuth.
+   * Auto-creates a default personal org if new.
+   */
+  async findOrCreateFromGithub(profile: {
+    githubId: string;
+    email: string;
+    name: string;
+    avatarUrl?: string;
+  }): Promise<User> {
+    // Check if already linked via GitHub ID
+    let user = await this.findByGithubId(profile.githubId);
+    if (user) return user;
+
+    // Check if email exists (link GitHub to existing account)
+    user = await this.findByEmail(profile.email);
+    if (user) {
+      user.githubId = profile.githubId;
+      if (profile.avatarUrl) user.avatarUrl = profile.avatarUrl;
+      return this.userRepo.save(user);
+    }
+
+    // Brand new user — create org + user
+    const org = await this.orgsService.createDefaultOrg(profile.name);
+    const newUser = this.userRepo.create({
+      email: profile.email,
+      name: profile.name,
+      githubId: profile.githubId,
+      avatarUrl: profile.avatarUrl || null,
+      orgId: org.id,
+    });
+
+    return this.userRepo.save(newUser);
+  }
+
+  /**
    * Validate email/password for local login.
    */
   async validateCredentials(

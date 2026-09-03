@@ -1,9 +1,10 @@
-name: Deploy to Production
+name: Deploy to Staging
 
 on:
   push:
     branches:
-      - main
+      - staging
+      - develop
   workflow_dispatch:
 
 env:
@@ -13,10 +14,10 @@ env:
 
 jobs:
   # -----------------------------------------------------------------------
-  # Job 1: Build & Push Docker images to ECR
+  # Job 1: Build & Push Docker images to ECR with staging tag
   # -----------------------------------------------------------------------
   build-and-push:
-    name: Build & Push Docker Images
+    name: Build & Push Docker Images (Staging)
     runs-on: ubuntu-latest
     outputs:
       image-tag: ${{ steps.meta.outputs.tag }}
@@ -27,7 +28,7 @@ jobs:
 
       - name: Set image tag
         id: meta
-        run: echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+        run: echo "tag=staging-${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -43,72 +44,38 @@ jobs:
         run: |
           docker build -f apps/api/Dockerfile \
             -t ${{ env.ECR_REGISTRY }}/quorum-api:${{ steps.meta.outputs.tag }} \
-            -t ${{ env.ECR_REGISTRY }}/quorum-api:latest \
+            -t ${{ env.ECR_REGISTRY }}/quorum-api:staging \
             .
           docker push ${{ env.ECR_REGISTRY }}/quorum-api:${{ steps.meta.outputs.tag }}
-          docker push ${{ env.ECR_REGISTRY }}/quorum-api:latest
+          docker push ${{ env.ECR_REGISTRY }}/quorum-api:staging
 
       - name: Build & Push Web image
         run: |
           docker build -f apps/web/Dockerfile \
-            --build-arg NEXT_PUBLIC_API_URL=https://api.quorum.atma-ai.co.in \
+            --build-arg NEXT_PUBLIC_API_URL=https://api-staging.quorum.atma-ai.co.in \
             --build-arg NEXT_PUBLIC_LIVEKIT_URL=wss://quorum-oor689rg.livekit.cloud \
             -t ${{ env.ECR_REGISTRY }}/quorum-web:${{ steps.meta.outputs.tag }} \
-            -t ${{ env.ECR_REGISTRY }}/quorum-web:latest \
+            -t ${{ env.ECR_REGISTRY }}/quorum-web:staging \
             .
           docker push ${{ env.ECR_REGISTRY }}/quorum-web:${{ steps.meta.outputs.tag }}
-          docker push ${{ env.ECR_REGISTRY }}/quorum-web:latest
+          docker push ${{ env.ECR_REGISTRY }}/quorum-web:staging
 
       - name: Build & Push Agent image
         run: |
           docker build -f apps/agent/Dockerfile \
             -t ${{ env.ECR_REGISTRY }}/quorum-agent:${{ steps.meta.outputs.tag }} \
-            -t ${{ env.ECR_REGISTRY }}/quorum-agent:latest \
+            -t ${{ env.ECR_REGISTRY }}/quorum-agent:staging \
             .
           docker push ${{ env.ECR_REGISTRY }}/quorum-agent:${{ steps.meta.outputs.tag }}
-          docker push ${{ env.ECR_REGISTRY }}/quorum-agent:latest
+          docker push ${{ env.ECR_REGISTRY }}/quorum-agent:staging
 
   # -----------------------------------------------------------------------
-  # Job 2: Deploy CDK Infrastructure (if changed)
+  # Job 2: Deploy to EKS Staging
   # -----------------------------------------------------------------------
-  deploy-infra:
-    name: Deploy CDK Infrastructure
+  deploy-staging:
+    name: Deploy to EKS (Staging)
     runs-on: ubuntu-latest
     needs: build-and-push
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-          cache-dependency-path: 'infrastructure/package-lock.json'
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Install CDK Dependencies
-        run: npm ci
-        working-directory: infrastructure
-
-      - name: CDK Deploy
-        run: npx cdk deploy --require-approval never
-        working-directory: infrastructure
-
-  # -----------------------------------------------------------------------
-  # Job 3: Deploy to EKS via Kustomize
-  # -----------------------------------------------------------------------
-  deploy-k8s:
-    name: Deploy to EKS
-    runs-on: ubuntu-latest
-    needs: [build-and-push, deploy-infra]
 
     steps:
       - name: Checkout Repository
@@ -132,9 +99,9 @@ jobs:
         with:
           version: 'v1.30.0'
 
-      - name: Update image tags in production overlay
+      - name: Update image tags in staging overlay
         run: |
-          cd k8s/overlays/production
+          cd k8s/overlays/staging
           kustomize edit set image \
             quorum-api=${{ env.ECR_REGISTRY }}/quorum-api:${{ needs.build-and-push.outputs.image-tag }} \
             quorum-web=${{ env.ECR_REGISTRY }}/quorum-web:${{ needs.build-and-push.outputs.image-tag }} \
@@ -142,7 +109,7 @@ jobs:
 
       - name: Apply Kustomize manifests
         run: |
-          kubectl apply -k k8s/overlays/production/
+          kubectl apply -k k8s/overlays/staging/
 
       - name: Apply Datadog manifests
         run: |
@@ -154,16 +121,13 @@ jobs:
           kubectl rollout status deployment/quorum-web -n quorum --timeout=300s
           kubectl rollout status deployment/quorum-agent -n quorum --timeout=300s
 
-      - name: Verify deployment
+      - name: Verify staging deployment
         run: |
-          echo "=== Pod Status ==="
+          echo "=== Staging Pod Status ==="
           kubectl get pods -n quorum
           echo ""
-          echo "=== Services ==="
+          echo "=== Staging Services ==="
           kubectl get svc -n quorum
           echo ""
-          echo "=== Ingress ==="
+          echo "=== Staging Ingress ==="
           kubectl get ingress -n quorum
-          echo ""
-          echo "=== Datadog Agent ==="
-          kubectl get pods -n datadog

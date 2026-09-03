@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quorum-agent
+  namespace: quorum
+  labels:
+    app.kubernetes.io/name: quorum-agent
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/part-of: quorum
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "quorum-agent"
+    tags.datadoghq.com/version: "0.1.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: quorum-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: quorum-agent
+        app.kubernetes.io/component: agent
+        app.kubernetes.io/part-of: quorum
+        tags.datadoghq.com/env: "production"
+        tags.datadoghq.com/service: "quorum-agent"
+        tags.datadoghq.com/version: "0.1.0"
+      annotations:
+        ad.datadoghq.com/quorum-agent.logs: '[{"source":"python","service":"quorum-agent"}]'
+    spec:
+      containers:
+        - name: quorum-agent
+          image: quorum-agent:latest  # Overridden per environment (ECR URI)
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: quorum-config
+          env:
+            - name: LIVEKIT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: quorum-config
+                  key: LIVEKIT_URL
+            - name: LIVEKIT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: quorum-secrets
+                  key: LIVEKIT_API_KEY
+            - name: LIVEKIT_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: quorum-secrets
+                  key: LIVEKIT_API_SECRET
+            - name: DD_SERVICE
+              value: "quorum-agent"
+            - name: DD_VERSION
+              value: "0.1.0"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+      # No liveness/readiness probes — the agent is a background worker
+      # with no HTTP interface. LiveKit agent framework handles reconnection.
+      terminationGracePeriodSeconds: 60

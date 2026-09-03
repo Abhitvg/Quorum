@@ -1,0 +1,132 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: quorum-development
+
+resources:
+  - ../../base
+
+patches:
+  # Scale down to 1 replica for all services in dev
+  - target:
+      kind: Deployment
+      name: quorum-api
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: quorum-web
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: quorum-agent
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  # Lower HPA min replicas
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: quorum-api
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: quorum-web
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: quorum-agent
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+  # Lower resource limits for dev
+  - target:
+      kind: Deployment
+      name: quorum-api
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+  - target:
+      kind: Deployment
+      name: quorum-web
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+  - target:
+      kind: Deployment
+      name: quorum-agent
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+  # Remove ingress host restrictions for local dev
+  - target:
+      kind: Ingress
+      name: quorum-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: ""
+      - op: replace
+        path: /spec/rules/1/host
+        value: ""
+  # Override ConfigMap values for dev
+  - target:
+      kind: ConfigMap
+      name: quorum-config
+    patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: quorum-config
+      data:
+        DD_ENV: "development"
+        DD_TRACE_SAMPLE_RATE: "1"
+        DATABASE_HOST: "localhost"
+        DATABASE_PORT: "5432"
+        DATABASE_USER: "quorum"
+        DATABASE_NAME: "quorum"
+        DATABASE_IAM_AUTH: "false"
+        REDIS_HOST: "localhost"
+        REDIS_PORT: "6379"

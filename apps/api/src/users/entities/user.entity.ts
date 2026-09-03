@@ -47,6 +47,15 @@ export class User {
   })
   googleId: string | null;
 
+  @Column({
+    name: 'github_id',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    unique: true,
+  })
+  githubId: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

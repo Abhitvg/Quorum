@@ -32,11 +32,14 @@ COPY apps/api/package.json ./apps/api/package.json
 # Install production dependencies only
 RUN pnpm install --prod --filter=@quorum/api...
 
+# Install dd-trace for Datadog APM
+RUN cd apps/api && npm install dd-trace@latest --no-save
+
 # Copy compiled code
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
 # Expose port (default NestJS)
 EXPOSE 3001
 
-# Start the application
-CMD ["pnpm", "--prefix", "apps/api", "run", "start:prod"]
+# Start the application with dd-trace auto-instrumentation
+CMD ["node", "--require", "dd-trace/init", "apps/api/dist/main"]

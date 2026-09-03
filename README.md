@@ -75,3 +75,107 @@ This output serves as proof that the user authentication, database persistence (
 - `pnpm db:up`: Starts the database container.
 - `pnpm db:reset`: Drops and recreates the local database.
 - `pnpm clean`: Cleans the turbo cache and removes `node_modules`.
+
+## ☸️ Kubernetes (EKS) Deployment
+
+The production infrastructure runs on **Amazon EKS** with Kustomize-based manifests in the `k8s/` directory.
+
+### Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    AWS EKS Cluster                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │  quorum-web  │  │  quorum-api  │  │ quorum-agent│     │
+│  │  (Next.js)   │  │  (NestJS)    │  │  (Python)   │     │
+│  │  3 replicas   │  │  3 replicas   │  │  2 replicas  │     │
+│  └──────┬───────┘  └──────┬───────┘  └─────────────┘     │
+│         │                  │                              │
+│  ┌──────┴──────────────────┴──────┐                      │
+│  │     AWS ALB Ingress Controller  │                      │
+│  └────────────────────────────────┘                      │
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐                     │
+│  │  Datadog      │  │  Datadog      │                     │
+│  │  Node Agent   │  │  Cluster Agent│                     │
+│  │  (DaemonSet)  │  │  (2 replicas) │                     │
+│  └──────────────┘  └──────────────┘                     │
+└──────────────────────────────────────────────────────────┘
+         │                    │
+    ┌────┴────┐         ┌────┴────┐
+    │ RDS     │         │ ElastiCache│
+    │ Postgres│         │ Redis      │
+    └─────────┘         └───────────┘
+```
+
+### Environments
+
+| Environment | Branch | Overlay | Hosts |
+|-------------|--------|---------|-------|
+| Development | local | `k8s/overlays/development/` | localhost |
+| Staging | `staging` / `develop` | `k8s/overlays/staging/` | `staging.quorum.atma-ai.co.in` |
+| Production | `main` | `k8s/overlays/production/` | `quorum.atma-ai.co.in` |
+
+### Deploying Manually
+
+```bash
+# 1. Configure kubeconfig
+aws eks update-kubeconfig --name QuorumCluster --region eu-north-1
+
+# 2. Deploy to production
+kubectl apply -k k8s/overlays/production/
+
+# 3. Deploy Datadog
+kubectl apply -k k8s/base/datadog/
+
+# 4. Verify
+kubectl get pods -n quorum
+kubectl get ingress -n quorum
+```
+
+### Building Docker Images
+
+```bash
+# From monorepo root:
+docker build -f apps/api/Dockerfile -t quorum-api .
+docker build -f apps/web/Dockerfile -t quorum-web .
+docker build -f apps/agent/Dockerfile -t quorum-agent .
+```
+
+## 📊 Datadog Observability
+
+Full-stack monitoring is powered by the **Datadog Operator** with:
+
+- **APM Tracing**: Distributed traces across API → Web → Agent (auto-instrumented via `dd-trace` / `ddtrace`)
+- **Log Collection**: All container stdout/stderr collected with service/source tags
+- **Infrastructure Metrics**: Node, pod, and container-level resource monitoring
+- **Live Processes**: Real-time process visibility inside containers
+- **Network Performance**: Inter-service network traffic monitoring
+
+### Setup (One-time)
+
+```bash
+# Install Datadog Operator
+helm repo add datadog https://helm.datadoghq.com
+helm install datadog-operator datadog/datadog-operator \
+  --namespace datadog --create-namespace
+
+# Create Datadog API key secret
+kubectl create secret generic datadog-secret \
+  --from-literal api-key=<YOUR_DD_API_KEY> \
+  -n datadog
+
+# Apply Datadog Agent configuration
+kubectl apply -k k8s/base/datadog/
+```
+
+### Unified Service Tagging
+
+All services are tagged with `env`, `service`, and `version` labels for correlation:
+
+| Service | `DD_SERVICE` | Language | APM Method |
+|---------|-------------|----------|------------|
+| API | `quorum-api` | Node.js | `--require dd-trace/init` |
+| Web | `quorum-web` | Node.js | `--require dd-trace/init` |
+| Agent | `quorum-agent` | Python | `ddtrace-run` |
+

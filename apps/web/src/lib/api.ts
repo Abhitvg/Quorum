@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
  * Typed fetch wrapper for the Quorum API.
@@ -10,14 +10,20 @@ async function apiFetch<T>(
 ): Promise<T> {
   const url = `${API_URL}${path}`;
 
-  const res = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+  } catch {
+    // Network error (API server not running, CORS, DNS failure, etc.)
+    throw new ApiError(0, 'Cannot connect to server. Please ensure the API is running.');
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

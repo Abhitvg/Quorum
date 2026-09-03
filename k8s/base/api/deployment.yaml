@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quorum-api
+  namespace: quorum
+  labels:
+    app.kubernetes.io/name: quorum-api
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: quorum
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "quorum-api"
+    tags.datadoghq.com/version: "0.1.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: quorum-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: quorum-api
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: quorum
+        tags.datadoghq.com/env: "production"
+        tags.datadoghq.com/service: "quorum-api"
+        tags.datadoghq.com/version: "0.1.0"
+      annotations:
+        ad.datadoghq.com/quorum-api.logs: '[{"source":"nodejs","service":"quorum-api"}]'
+    spec:
+      serviceAccountName: quorum-api
+      containers:
+        - name: quorum-api
+          image: quorum-api:latest  # Overridden per environment (ECR URI)
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: quorum-config
+            - secretRef:
+                name: quorum-secrets
+          env:
+            - name: DD_SERVICE
+              value: "quorum-api"
+            - name: DD_VERSION
+              value: "0.1.0"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: NODE_OPTIONS
+              value: "--require dd-trace/init"
+            - name: GOOGLE_CALLBACK_URL
+              value: "https://api.quorum.atma-ai.co.in/auth/google/callback"
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.quorum.atma-ai.co.in"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quorum-api
+  namespace: quorum
+  labels:
+    app.kubernetes.io/name: quorum-api
+    app.kubernetes.io/part-of: quorum
+  annotations:
+    # IRSA: This will be annotated by CDK with the correct IAM role ARN
+    # eks.amazonaws.com/role-arn: arn:aws:iam::role/QuorumApiRole

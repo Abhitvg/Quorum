@@ -32,7 +32,11 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   ): Promise<void> {
     const email = profile.emails?.[0]?.value;
     if (!email) {
-      return done(new Error('GitHub account has no public email. Please make your email public in GitHub settings.'));
+      return done(
+        new Error(
+          'GitHub account has no public email. Please make your email public in GitHub settings.',
+        ),
+      );
     }
 
     const user = await this.usersService.findOrCreateFromGithub({

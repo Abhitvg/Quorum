@@ -43,7 +43,7 @@ describe('AppController (e2e)', () => {
       const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
       expect(cookies[0]).toMatch(/qr_token=/);
-      user1Cookie = cookies;
+      user1Cookie = cookies as unknown as string[];
     });
 
     it('should fetch the logged-in user details', async () => {
@@ -86,7 +86,7 @@ describe('AppController (e2e)', () => {
         })
         .expect(201);
 
-      user2Cookie = response.headers['set-cookie'];
+      user2Cookie = response.headers['set-cookie'] as unknown as string[];
     });
 
     it('user1 creates a meeting', async () => {

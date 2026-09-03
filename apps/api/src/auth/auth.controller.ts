@@ -90,12 +90,10 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleCallback(
-    @Req() req: Request & { user: User },
-    @Res() res: Response,
-  ) {
+  googleCallback(@Req() req: Request & { user: User }, @Res() res: Response) {
     this.authService.setAuthCookie(res, req.user);
-    const frontendUrl = this.config.get<string>('frontendUrl') || 'http://localhost:3000';
+    const frontendUrl =
+      this.config.get<string>('frontendUrl') || 'http://localhost:3000';
     res.redirect(`${frontendUrl}/dashboard`);
   }
 
@@ -109,12 +107,10 @@ export class AuthController {
 
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
-  githubCallback(
-    @Req() req: Request & { user: User },
-    @Res() res: Response,
-  ) {
+  githubCallback(@Req() req: Request & { user: User }, @Res() res: Response) {
     this.authService.setAuthCookie(res, req.user);
-    const frontendUrl = this.config.get<string>('frontendUrl') || 'http://localhost:3000';
+    const frontendUrl =
+      this.config.get<string>('frontendUrl') || 'http://localhost:3000';
     res.redirect(`${frontendUrl}/dashboard`);
   }
 }

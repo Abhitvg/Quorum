@@ -176,6 +176,10 @@ export class InfrastructureStack extends cdk.Stack {
 
     const nodeLaunchTemplate = new ec2.LaunchTemplate(this, 'QuorumNodeLaunchTemplate', {
       userData,
+      blockDevices: [{
+        deviceName: '/dev/xvda',
+        volume: ec2.BlockDeviceVolume.ebs(20),
+      }],
     });
 
     const nodeGroup = cluster.addNodegroupCapacity('QuorumNodeGroup', {
@@ -185,7 +189,6 @@ export class InfrastructureStack extends cdk.Stack {
       minSize: 2,
       maxSize: 4,
       desiredSize: 4,
-      diskSize: 20,
       subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       launchTemplateSpec: {
         id: nodeLaunchTemplate.launchTemplateId!,

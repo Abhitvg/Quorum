@@ -163,15 +163,22 @@ export class InfrastructureStack extends cdk.Stack {
     // =========================================================================
     // 7. Managed Node Group — worker nodes for running pods
     // =========================================================================
-    // Create a custom Launch Template to override the default EKS max-pods limit
-    // t3.micro normally supports only 4 pods per node. By using VPC CNI prefix delegation
-    // and explicitly setting --max-pods=11, we can fit our workloads and datadog daemonsets.
-    const userData = ec2.UserData.forLinux();
-    userData.addCommands(
-      'set -ex',
-      'B64_CLUSTER_CA=$(aws eks describe-cluster --name QuorumCluster --region eu-north-1 --query "cluster.certificateAuthority.data" --output text)',
-      'API_SERVER_URL=$(aws eks describe-cluster --name QuorumCluster --region eu-north-1 --query "cluster.endpoint" --output text)',
-      '/etc/eks/bootstrap.sh QuorumCluster --b64-cluster-ca $B64_CLUSTER_CA --apiserver-endpoint $API_SERVER_URL --use-max-pods false --kubelet-extra-args "--max-pods=11"'
+    const userData = ec2.MultipartUserData.forLinux();
+    userData.addUserDataPart(
+      ec2.UserData.custom(`MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
+
+--==MYBOUNDARY==
+Content-Type: text/x-shellscript; charset="us-ascii"
+
+#!/bin/bash
+set -ex
+B64_CLUSTER_CA=$(aws eks describe-cluster --name QuorumCluster --region eu-north-1 --query "cluster.certificateAuthority.data" --output text)
+API_SERVER_URL=$(aws eks describe-cluster --name QuorumCluster --region eu-north-1 --query "cluster.endpoint" --output text)
+/etc/eks/bootstrap.sh QuorumCluster --b64-cluster-ca $B64_CLUSTER_CA --apiserver-endpoint $API_SERVER_URL --use-max-pods false --kubelet-extra-args "--max-pods=11"
+--==MYBOUNDARY==--\\`),
+      ec2.MultipartBody.SHELL_SCRIPT,
+      true
     );
 
     const nodeLaunchTemplate = new ec2.LaunchTemplate(this, 'QuorumNodeLaunchTemplate', {
